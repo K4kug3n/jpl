@@ -1,8 +1,9 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum TokenKind {
 	ADD,
 	MINUS,
 	NUMBER,
+	IDENTIFIER,
 	EOF
 }
 
@@ -31,6 +32,10 @@ impl Lexer<'_> {
 
 	fn advance(&mut self) {
 		self.current_value = self.program_iterator.next();
+
+		while self.current_value != None && self.current_value.unwrap() == ' ' {
+			self.current_value = self.program_iterator.next();
+		}
 	}
 
 	fn is_valid_identifier(value: Option<char>) -> bool {
@@ -75,48 +80,47 @@ impl Lexer<'_> {
 		return word;
 	}
 
-	fn next_word(&mut self) -> Option<String> {
+	fn to_token(current_word: String) -> Token {
+		match current_word.as_str() {
+			"+" => Token{ kind: TokenKind::ADD, value: String::from("+") },
+			"-" => Token{ kind: TokenKind::MINUS, value: String::from("-") },
+			_ => panic!("Unknow token")
+		}
+	}
+
+	fn next_token(&mut self) -> Token {
 		if self.current_value == None {
-			return None;
+			return Token{ kind: TokenKind::EOF, value: String::new() };
 		}
 
 		let value : char = self.current_value.unwrap();
 
 		if value.is_digit(10){
-			return Some(self.parse_number());
+			return Token{ kind: TokenKind::NUMBER, value: self.parse_number() };
 		}
 
 		if value.is_alphabetic() {
-			return Some(self.parse_identifier());
+			return Token{ kind: TokenKind::IDENTIFIER, value: self.parse_identifier() };
 		}
 
 		self.advance();
 
-		Some(value.to_string())
-	}
-
-	fn to_token(current_word: String) -> Token {
-		match current_word.as_str() {
-			"+" => Token{ kind: TokenKind::ADD, value: String::from("+") },
-			"-" => Token{ kind: TokenKind::MINUS, value: String::from("-") },
-			_ => Token{ kind: TokenKind::NUMBER, value: current_word }
-		}
-	}
-
-	fn next_token(&mut self) -> Token {
-		match self.next_word() {
-			None => Token{ kind: TokenKind::EOF, value: String::new() },
-			Some(i) => Lexer::<'_>::to_token(i),
-		}
+		Lexer::<'_>::to_token(value.to_string())
 	}
 }
 
 fn main() {
-	let program = "52-4";
+	let program = "52 - HELLO + tEsT";
 	
 	let mut interpreter = Lexer::new(program);
 
-	println!("{:?}", interpreter.next_token());
-	println!("{:?}", interpreter.next_token());
-	println!("{:?}", interpreter.next_token());
+	let mut token = interpreter.next_token();
+
+	while token.kind != TokenKind::EOF {
+		println!("{:?}", token);
+
+		token = interpreter.next_token();
+	}
+	
+	println!("{:?}", token);
 }
