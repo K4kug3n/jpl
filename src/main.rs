@@ -2,7 +2,10 @@
 enum TokenKind {
 	ADD,
 	MINUS,
-	NUMBER,
+	PRODUCT,
+	DIVIDE,
+	INTEGER,
+	FLOAT,
 	IDENTIFIER,
 	EOF
 }
@@ -51,7 +54,7 @@ impl Lexer<'_> {
 		match value {
 			None => false,
 			Some(i) => {
-				i.is_numeric()
+				i.is_numeric() || i == '.'
 			}
 		}
 	}
@@ -84,6 +87,8 @@ impl Lexer<'_> {
 		match current_word.as_str() {
 			"+" => Token{ kind: TokenKind::ADD, value: String::from("+") },
 			"-" => Token{ kind: TokenKind::MINUS, value: String::from("-") },
+			"*" => Token{ kind: TokenKind::PRODUCT, value: String::from("*") },
+			"/" => Token{ kind: TokenKind::DIVIDE, value: String::from("/") },
 			_ => panic!("Unknow token")
 		}
 	}
@@ -96,7 +101,13 @@ impl Lexer<'_> {
 		let value : char = self.current_value.unwrap();
 
 		if value.is_digit(10){
-			return Token{ kind: TokenKind::NUMBER, value: self.parse_number() };
+			let number = self.parse_number();
+			if number.contains('.') {
+				return Token{ kind: TokenKind::FLOAT, value: number };
+			}
+			else {
+				return Token{ kind: TokenKind::INTEGER, value: number };
+			}
 		}
 
 		if value.is_alphabetic() {
@@ -110,7 +121,7 @@ impl Lexer<'_> {
 }
 
 fn main() {
-	let program = "52 - HELLO + tEsT";
+	let program = "52 - HELLO + tEsT / 552 * 3.5";
 	
 	let mut interpreter = Lexer::new(program);
 
