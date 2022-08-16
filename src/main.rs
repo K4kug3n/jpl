@@ -1,17 +1,14 @@
 pub mod lexer;
+pub mod parser;
 
 fn main() {
-	let program = "52 - HELLO + tEsT / 552 * 3.5";
+	let program = "52.2 - 552 + 3.5";
 	
-	let mut interpreter = lexer::Lexer::new(program);
+	let mut lexer = lexer::Lexer::new(program);
 
-	let mut token = interpreter.next_token();
+	let mut parser = parser::Parser::new(&mut lexer);
 
-	while token.kind != lexer::TokenKind::EOF {
-		println!("{:?}", token);
+	let node = parser.ast();
 
-		token = interpreter.next_token();
-	}
-	
-	println!("{:?}", token);
+	println!("{:?}", node);
 }
