@@ -1,13 +1,15 @@
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
-	ADD,
-	MINUS,
-	PRODUCT,
-	DIVIDE,
-	INTEGER,
-	FLOAT,
-	IDENTIFIER,
-	EOF
+	Add,
+	Minus,
+	Product,
+	Divide,
+	Integer,
+	Float,
+	Identifier,
+	LParenthesis,
+	RParenthesis,
+	Eof
 }
 
 #[derive(Debug)]
@@ -85,17 +87,19 @@ impl Lexer<'_> {
 
 	fn to_token(current_word: String) -> Token {
 		match current_word.as_str() {
-			"+" => Token{ kind: TokenKind::ADD, value: String::from("+") },
-			"-" => Token{ kind: TokenKind::MINUS, value: String::from("-") },
-			"*" => Token{ kind: TokenKind::PRODUCT, value: String::from("*") },
-			"/" => Token{ kind: TokenKind::DIVIDE, value: String::from("/") },
+			"+" => Token{ kind: TokenKind::Add, value: String::from("+") },
+			"-" => Token{ kind: TokenKind::Minus, value: String::from("-") },
+			"*" => Token{ kind: TokenKind::Product, value: String::from("*") },
+			"/" => Token{ kind: TokenKind::Divide, value: String::from("/") },
+			"(" => Token{ kind: TokenKind::LParenthesis, value: String::from("(") },
+			")" => Token{ kind: TokenKind::RParenthesis, value: String::from(")") },
 			_ => panic!("Unknow token")
 		}
 	}
 
 	pub fn next_token(&mut self) -> Token {
 		if self.current_value == None {
-			return Token{ kind: TokenKind::EOF, value: String::new() };
+			return Token{ kind: TokenKind::Eof, value: String::new() };
 		}
 
 		let value : char = self.current_value.unwrap();
@@ -103,15 +107,15 @@ impl Lexer<'_> {
 		if value.is_digit(10){
 			let number = self.parse_number();
 			if number.contains('.') {
-				return Token{ kind: TokenKind::FLOAT, value: number };
+				return Token{ kind: TokenKind::Float, value: number };
 			}
 			else {
-				return Token{ kind: TokenKind::INTEGER, value: number };
+				return Token{ kind: TokenKind::Integer, value: number };
 			}
 		}
 
 		if value.is_alphabetic() {
-			return Token{ kind: TokenKind::IDENTIFIER, value: self.parse_identifier() };
+			return Token{ kind: TokenKind::Identifier, value: self.parse_identifier() };
 		}
 
 		self.advance();

@@ -55,28 +55,36 @@ impl Parser<'_> {
 	}
 
 	fn f(&mut self) -> NodeExpression {
-		if self.expect(TokenKind::INTEGER) {
+		if self.expect(TokenKind::Integer) {
 			let value = self.current_token.value.parse::<i64>().unwrap();
 
-			self.eat(TokenKind::INTEGER);
+			self.eat(TokenKind::Integer);
 
 			return NodeExpression::Int(value);
 		}
-		else if self.expect(TokenKind::FLOAT) {
+		else if self.expect(TokenKind::Float) {
 			let value = self.current_token.value.parse::<f64>().unwrap();
 
-			self.eat(TokenKind::FLOAT);
+			self.eat(TokenKind::Float);
 
 			return NodeExpression::Float(value);
 		}
-		// TODO: parenthesis
+		else if self.expect(TokenKind::LParenthesis) {
+			self.eat(TokenKind::LParenthesis);
+
+			let exp = self.e();
+
+			self.eat(TokenKind::RParenthesis);
+
+			return exp;
+		}
 
 		panic!("F : no valid token kind");
 	}
 
 	fn g(&mut self, previous : NodeExpression) -> Option<NodeExpression> {
-		if self.expect(TokenKind::PRODUCT) {
-			self.eat(TokenKind::PRODUCT);
+		if self.expect(TokenKind::Product) {
+			self.eat(TokenKind::Product);
 
 			return Some(NodeExpression::BinaryOp { 
 				op:Operator::Product, 
@@ -84,8 +92,8 @@ impl Parser<'_> {
 				right: Box::new(self.e()) 
 			});
 		}
-		else if self.expect(TokenKind::DIVIDE) {
-			self.eat(TokenKind::DIVIDE);
+		else if self.expect(TokenKind::Divide) {
+			self.eat(TokenKind::Divide);
 
 			return Some(NodeExpression::BinaryOp { 
 				op:Operator::Divide, 
@@ -98,8 +106,8 @@ impl Parser<'_> {
 	}
 
 	fn d(&mut self, previous : NodeExpression) -> Option<NodeExpression> {
-		if self.expect(TokenKind::ADD) {
-			self.eat(TokenKind::ADD);
+		if self.expect(TokenKind::Add) {
+			self.eat(TokenKind::Add);
 
 			return Some(NodeExpression::BinaryOp { 
 				op:Operator::Add, 
@@ -107,8 +115,8 @@ impl Parser<'_> {
 				right: Box::new(self.e()) 
 			});
 		}
-		else if self.expect(TokenKind::MINUS) {
-			self.eat(TokenKind::MINUS);
+		else if self.expect(TokenKind::Minus) {
+			self.eat(TokenKind::Minus);
 
 			return Some(NodeExpression::BinaryOp { 
 				op:Operator::Minus, 
