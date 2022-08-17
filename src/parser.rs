@@ -1,118 +1,135 @@
 use crate::lexer::{Lexer, Token, TokenKind};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Operator {
-    Add,
-    Minus,
-    Product,
-    Divide
+	Add,
+	Minus,
+	Product,
+	Divide
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NodeExpression {
-    Int(i64),
-    Float(f64),
-    BinaryOp {
-        op: Operator,
-        left: Box<NodeExpression>,
-        right: Box<NodeExpression>
-    }
+	Int(i64),
+	Float(f64),
+	BinaryOp {
+		op: Operator,
+		left: Box<NodeExpression>,
+		right: Box<NodeExpression>
+	}
 }
-
-
 pub struct Parser<'a> {
-    lexer: &'a mut Lexer<'a>,
-    current_token: Token
+	lexer: &'a mut Lexer<'a>,
+	current_token: Token
 }
 
 impl Parser<'_> {
-    pub fn new<'a>(lexer: &'a mut Lexer<'a>) -> Parser<'a> {
-        let next_token = lexer.next_token();
+	pub fn new<'a>(lexer: &'a mut Lexer<'a>) -> Parser<'a> {
+		let next_token = lexer.next_token();
 
-        Parser {
-            lexer: lexer,
-            current_token: next_token
-        }
-    }
+		Parser {
+			lexer: lexer,
+			current_token: next_token
+		}
+	}
 
-    fn eat(&mut self, kind: TokenKind){
-        if self.current_token.kind != kind {
-            panic!("Can't eat this token kind");
-        }
+	fn eat(&mut self, kind: TokenKind) {
+		if self.current_token.kind != kind {
+			panic!("Can't eat this token kind");
+		}
 
-        self.current_token = self.lexer.next_token();
-    }
+		self.current_token = self.lexer.next_token();
+	}
 
-    fn A(&mut self) -> NodeExpression {
-        if self.current_token.kind == TokenKind::INTEGER {
-            let value = self.current_token.value.parse::<i64>().unwrap();
+	fn expect(&self, kind: TokenKind) -> bool {
+		self.current_token.kind == kind
+	}
 
-            self.eat(TokenKind::INTEGER);
+	fn t(&mut self) -> NodeExpression {
+		let left = self.f();
+		
+		match self.g(left.clone()) {
+			Some(x) => x,
+			None => left
+		}
+	}
 
-            match self.E(NodeExpression::Int(value)) {
-                Some(x) => return x,
-                None => return NodeExpression::Int(value)
-            }
-        }
-        else if self.current_token.kind == TokenKind::FLOAT {
-            let value = self.current_token.value.parse::<f64>().unwrap();
+	fn f(&mut self) -> NodeExpression {
+		if self.expect(TokenKind::INTEGER) {
+			let value = self.current_token.value.parse::<i64>().unwrap();
 
-            self.eat(TokenKind::FLOAT);
+			self.eat(TokenKind::INTEGER);
 
-            match self.E(NodeExpression::Float(value)) {
-                Some(x) => return x,
-                None => return NodeExpression::Float(value)
-            }
-        }
+			return NodeExpression::Int(value);
+		}
+		else if self.expect(TokenKind::FLOAT) {
+			let value = self.current_token.value.parse::<f64>().unwrap();
 
-        panic!("A : No valid token kind");
-    }
+			self.eat(TokenKind::FLOAT);
 
-    fn E(&mut self, previous : NodeExpression) -> Option<NodeExpression> {
-        if self.current_token.kind == TokenKind::ADD {
-            self.eat(TokenKind::ADD);
+			return NodeExpression::Float(value);
+		}
+		// TODO: parenthesis
 
-            return Some(NodeExpression::BinaryOp { 
-                op: Operator::Add,
-                left: Box::new(previous),
-                right: Box::new(self.A()) 
-            });
-        }
-        else if self.current_token.kind == TokenKind::MINUS {
-            self.eat(TokenKind::MINUS);
+		panic!("F : no valid token kind");
+	}
 
-            return Some(NodeExpression::BinaryOp { 
-                op: Operator::Minus,
-                left: Box::new(previous),
-                right: Box::new(self.A()) 
-            });
-        }
-        else if self.current_token.kind == TokenKind::PRODUCT {
-            self.eat(TokenKind::PRODUCT);
+	fn g(&mut self, previous : NodeExpression) -> Option<NodeExpression> {
+		if self.expect(TokenKind::PRODUCT) {
+			self.eat(TokenKind::PRODUCT);
 
-            return Some(NodeExpression::BinaryOp { 
-                op: Operator::Product,
-                left: Box::new(previous),
-                right: Box::new(self.A()) 
-            });
-        }
-        else if self.current_token.kind == TokenKind::DIVIDE {
-            self.eat(TokenKind::DIVIDE);
+			return Some(NodeExpression::BinaryOp { 
+				op:Operator::Product, 
+				left: Box::new(previous), 
+				right: Box::new(self.e()) 
+			});
+		}
+		else if self.expect(TokenKind::DIVIDE) {
+			self.eat(TokenKind::DIVIDE);
 
-            return Some(NodeExpression::BinaryOp { 
-                op: Operator::Divide,
-                left: Box::new(previous),
-                right: Box::new(self.A()) 
-            });
-        }
-        else if self.current_token.kind == TokenKind::EOF {
-            return None;
-        }
+			return Some(NodeExpression::BinaryOp { 
+				op:Operator::Divide, 
+				left: Box::new(previous), 
+				right: Box::new(self.e()) 
+			});
+		}
 
-        panic!("E : No valid token kind");
-    }
+		return None;
+	}
 
-    pub fn ast(&mut self) -> NodeExpression {
-        return self.A();
-    }
+	fn d(&mut self, previous : NodeExpression) -> Option<NodeExpression> {
+		if self.expect(TokenKind::ADD) {
+			self.eat(TokenKind::ADD);
+
+			return Some(NodeExpression::BinaryOp { 
+				op:Operator::Add, 
+				left: Box::new(previous), 
+				right: Box::new(self.e()) 
+			});
+		}
+		else if self.expect(TokenKind::MINUS) {
+			self.eat(TokenKind::MINUS);
+
+			return Some(NodeExpression::BinaryOp { 
+				op:Operator::Minus, 
+				left: Box::new(previous), 
+				right: Box::new(self.e()) 
+			});
+		}
+
+		return None;
+	}
+
+	fn e(&mut self) -> NodeExpression {
+		let left = self.t();
+		
+		match self.d(left.clone()) {
+			Some(x) => x,
+			None => left
+		}
+	}
+
+	pub fn ast(&mut self) -> NodeExpression {
+		return self.e();
+	}
 }
