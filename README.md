@@ -14,7 +14,7 @@
 
 # Just a Programming Language
 
-JPL is a toy language to practice programming language creation, made in rust as learning project
+JPL is a toy language to practice programming language creation, made in Rust as learning project
 
 ## Current Grammar
 Hardly inspired by Compilers & Interpreters course from University of Geneva  
@@ -23,6 +23,6 @@ E &rarr; T D
 D &rarr; + E  
 D &rarr; eps  
 T &rarr; F G  
-G &rarr; eps
-F &rarr; ( E )
-F &rarr; nb
+G &rarr; eps  
+F &rarr; ( E )  
+F &rarr; nb  

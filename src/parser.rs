@@ -1,4 +1,5 @@
 use crate::lexer::{Lexer, Token, TokenKind};
+use crate::visitor::{Visitable, Visitor};
 
 #[derive(Debug, Clone)]
 pub enum Operator {
@@ -18,6 +19,17 @@ pub enum NodeExpression {
 		right: Box<NodeExpression>
 	}
 }
+
+impl Visitable for NodeExpression {
+    fn accept(&self, visitor: &mut dyn Visitor) {
+        match self {
+            NodeExpression::Int(x) => visitor.visit_int(*x),
+            NodeExpression::Float(x) => visitor.visit_float(*x),
+            NodeExpression::BinaryOp { op, left, right } => visitor.visit_binary_op(op, left, right)
+        }
+    }
+}
+
 pub struct Parser<'a> {
 	lexer: &'a mut Lexer<'a>,
 	current_token: Token

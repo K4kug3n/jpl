@@ -1,8 +1,10 @@
 pub mod lexer;
 pub mod parser;
+pub mod interpretor;
+pub mod visitor;
 
 fn main() {
-	let program = "52.2 * (552 + 3.5) / 12 - 3.141592";
+	let program = "(6 * 2) + (2 * 3)";
 	
 	let mut lexer = lexer::Lexer::new(program);
 
@@ -10,5 +12,6 @@ fn main() {
 
 	let ast = parser.ast();
 
-	println!("{:?}", ast);
+	let mut interpretor = interpretor::InterpretorVisitor::new();
+	interpretor.interpret(ast);
 }
