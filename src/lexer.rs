@@ -123,3 +123,60 @@ impl Lexer<'_> {
 		Lexer::<'_>::to_token(value.to_string())
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	fn expect_token_kind(program : &str, token_kind : TokenKind) {
+		let mut lexer = Lexer::new(program);
+		let token = lexer.next_token();
+
+		assert_eq!(token.kind, token_kind);
+	}
+
+	#[test]
+	fn eof_token() {
+		expect_token_kind("", TokenKind::Eof);
+	}
+
+	#[test]
+	fn add_token() {
+		expect_token_kind("+", TokenKind::Add);
+	}
+
+	#[test]
+	fn minus_token() {
+		expect_token_kind("-", TokenKind::Minus);
+	}
+
+	#[test]
+	fn product_token() {
+		expect_token_kind("*", TokenKind::Product);
+	}
+
+	#[test]
+	fn divide_token() {
+		expect_token_kind("/", TokenKind::Divide);
+	}
+
+	#[test]
+	fn integer_token() {
+		expect_token_kind("3325", TokenKind::Integer);
+		expect_token_kind("3", TokenKind::Integer);
+	}
+
+	#[test]
+	fn float_token() {
+		expect_token_kind("321596.3", TokenKind::Float);
+		expect_token_kind("3.3", TokenKind::Float);
+		expect_token_kind("3.3333666", TokenKind::Float);
+	}
+
+	#[test]
+	fn identifier_token() {
+		expect_token_kind("identifier", TokenKind::Identifier);
+		expect_token_kind("Testing", TokenKind::Identifier);
+		expect_token_kind("iTesting", TokenKind::Identifier);
+	}
+}
