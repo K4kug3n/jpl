@@ -1,8 +1,6 @@
-pub mod lexer;
-pub mod parser;
-pub mod interpretor;
-pub mod visitor;
-
+use jpl::interpretor;
+use jpl::lexer;
+use jpl::parser;
 fn main() {
 	let program = "(6 * 2) + (2 * 3)";
 	
