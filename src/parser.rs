@@ -10,22 +10,22 @@ pub enum Operator {
 }
 
 #[derive(Debug, Clone)]
-pub enum NodeExpression {
+pub enum Node {
 	Int(i64),
 	Float(f64),
 	BinaryOp {
 		op: Operator,
-		left: Box<NodeExpression>,
-		right: Box<NodeExpression>
+		left: Box<Node>,
+		right: Box<Node>
 	}
 }
 
-impl Visitable for NodeExpression {
+impl Visitable for Node {
     fn accept(&self, visitor: &mut dyn Visitor) {
         match self {
-            NodeExpression::Int(x) => visitor.visit_int(*x),
-            NodeExpression::Float(x) => visitor.visit_float(*x),
-            NodeExpression::BinaryOp { op, left, right } => visitor.visit_binary_op(op, left, right)
+            Node::Int(x) => visitor.visit_int(*x),
+            Node::Float(x) => visitor.visit_float(*x),
+            Node::BinaryOp { op, left, right } => visitor.visit_binary_op(op, left, right)
         }
     }
 }
@@ -57,7 +57,7 @@ impl Parser<'_> {
 		self.current_token.kind == kind
 	}
 
-	fn t(&mut self) -> NodeExpression {
+	fn t(&mut self) -> Node {
 		let left = self.f();
 		
 		match self.g(left.clone()) {
@@ -66,20 +66,20 @@ impl Parser<'_> {
 		}
 	}
 
-	fn f(&mut self) -> NodeExpression {
+	fn f(&mut self) -> Node {
 		if self.expect(TokenKind::Integer) {
 			let value = self.current_token.value.parse::<i64>().unwrap();
 
 			self.eat(TokenKind::Integer);
 
-			return NodeExpression::Int(value);
+			return Node::Int(value);
 		}
 		else if self.expect(TokenKind::Float) {
 			let value = self.current_token.value.parse::<f64>().unwrap();
 
 			self.eat(TokenKind::Float);
 
-			return NodeExpression::Float(value);
+			return Node::Float(value);
 		}
 		else if self.expect(TokenKind::LParenthesis) {
 			self.eat(TokenKind::LParenthesis);
@@ -94,11 +94,11 @@ impl Parser<'_> {
 		panic!("F : no valid token kind");
 	}
 
-	fn g(&mut self, previous : NodeExpression) -> Option<NodeExpression> {
+	fn g(&mut self, previous : Node) -> Option<Node> {
 		if self.expect(TokenKind::Product) {
 			self.eat(TokenKind::Product);
 
-			return Some(NodeExpression::BinaryOp { 
+			return Some(Node::BinaryOp { 
 				op:Operator::Product, 
 				left: Box::new(previous), 
 				right: Box::new(self.e()) 
@@ -107,7 +107,7 @@ impl Parser<'_> {
 		else if self.expect(TokenKind::Divide) {
 			self.eat(TokenKind::Divide);
 
-			return Some(NodeExpression::BinaryOp { 
+			return Some(Node::BinaryOp { 
 				op:Operator::Divide, 
 				left: Box::new(previous), 
 				right: Box::new(self.e()) 
@@ -117,11 +117,11 @@ impl Parser<'_> {
 		return None;
 	}
 
-	fn d(&mut self, previous : NodeExpression) -> Option<NodeExpression> {
+	fn d(&mut self, previous : Node) -> Option<Node> {
 		if self.expect(TokenKind::Add) {
 			self.eat(TokenKind::Add);
 
-			return Some(NodeExpression::BinaryOp { 
+			return Some(Node::BinaryOp { 
 				op:Operator::Add, 
 				left: Box::new(previous), 
 				right: Box::new(self.e()) 
@@ -130,7 +130,7 @@ impl Parser<'_> {
 		else if self.expect(TokenKind::Minus) {
 			self.eat(TokenKind::Minus);
 
-			return Some(NodeExpression::BinaryOp { 
+			return Some(Node::BinaryOp { 
 				op:Operator::Minus, 
 				left: Box::new(previous), 
 				right: Box::new(self.e()) 
@@ -140,7 +140,7 @@ impl Parser<'_> {
 		return None;
 	}
 
-	fn e(&mut self) -> NodeExpression {
+	fn e(&mut self) -> Node {
 		let left = self.t();
 		
 		match self.d(left.clone()) {
@@ -149,7 +149,7 @@ impl Parser<'_> {
 		}
 	}
 
-	pub fn ast(&mut self) -> NodeExpression {
+	pub fn ast(&mut self) -> Node {
 		return self.e();
 	}
 }

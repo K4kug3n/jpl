@@ -1,25 +1,25 @@
-use crate::parser::{NodeExpression, Operator};
+use crate::parser::{Node, Operator};
 use crate::visitor::{Visitor, Visitable};
 
 #[derive(Clone, Copy, Debug)]
-enum Result {
+enum ExpressionResult {
 	Int(i64),
 	Float(f64)
 }
 
 pub struct InterpretorVisitor { 
-	result: Result
+	result: ExpressionResult,
 }
 
 impl InterpretorVisitor {
 	pub fn new() -> InterpretorVisitor {
 		// TODO: Fixme this awfull placeholder
 		InterpretorVisitor {
-			result: Result::Float(0.0),
+			result: ExpressionResult::Float(0.0)
 		}
 	}
 
-	pub fn interpret(&mut self, ast : NodeExpression) {
+	pub fn interpret(&mut self, ast : Node) {
 		ast.accept(self);
 
 		println!("{:?}", self.result);
@@ -46,14 +46,14 @@ impl InterpretorVisitor {
 
 impl Visitor for InterpretorVisitor {
 	fn visit_int(&mut self, value: i64) {
-		self.result = Result::Int(value);
+		self.result = ExpressionResult::Int(value);
 	}
 
 	fn visit_float(&mut self, value: f64) {
-		self.result = Result::Float(value);
+		self.result = ExpressionResult::Float(value);
 	}
 
-	fn visit_binary_op(&mut self, op: &Operator, left: &NodeExpression, right: &NodeExpression) {
+	fn visit_binary_op(&mut self, op: &Operator, left: &Node, right: &Node) {
 		left.accept(self);
 		let left_result = self.result;
 
@@ -61,24 +61,24 @@ impl Visitor for InterpretorVisitor {
 		let right_result = self.result;
 		
 		match left_result {
-			Result::Int(lhs) => {
+			ExpressionResult::Int(lhs) => {
 				match right_result {
-					Result::Int(rhs) => {
-						self.result = Result::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs));
+					ExpressionResult::Int(rhs) => {
+						self.result = ExpressionResult::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs));
 					},
-					Result::Float(rhs) => {
-						self.result = Result::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs as i64));
+					ExpressionResult::Float(rhs) => {
+						self.result = ExpressionResult::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs as i64));
 					},
 				}
 			},
-			Result::Float(lhs) => {
+			ExpressionResult::Float(lhs) => {
 				match right_result {
-					Result::Int(rhs) => {
-						self.result = Result::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs as f64));
+					ExpressionResult::Int(rhs) => {
+						self.result = ExpressionResult::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs as f64));
 						
 					},
-					Result::Float(rhs) => {
-						self.result = Result::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs));
+					ExpressionResult::Float(rhs) => {
+						self.result = ExpressionResult::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs));
 					}
 				}
 			}
