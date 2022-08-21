@@ -9,6 +9,8 @@ pub enum TokenKind {
 	Identifier,
 	LParenthesis,
 	RParenthesis,
+	Equal,
+	Semilicon,
 	Eof
 }
 
@@ -93,6 +95,8 @@ impl Lexer<'_> {
 			"/" => Token{ kind: TokenKind::Divide, value: String::from("/") },
 			"(" => Token{ kind: TokenKind::LParenthesis, value: String::from("(") },
 			")" => Token{ kind: TokenKind::RParenthesis, value: String::from(")") },
+			"=" => Token{ kind: TokenKind::Equal, value: String::from("=") },
+			";" => Token{ kind: TokenKind::Semilicon, value: String::from(";") },
 			_ => panic!("Unknow token")
 		}
 	}
@@ -136,11 +140,6 @@ mod tests {
 	}
 
 	#[test]
-	fn eof_token() {
-		expect_token_kind("", TokenKind::Eof);
-	}
-
-	#[test]
 	fn add_token() {
 		expect_token_kind("+", TokenKind::Add);
 	}
@@ -178,5 +177,30 @@ mod tests {
 		expect_token_kind("identifier", TokenKind::Identifier);
 		expect_token_kind("Testing", TokenKind::Identifier);
 		expect_token_kind("iTesting", TokenKind::Identifier);
+	}
+
+	#[test]
+	fn left_parenthesis_token() {
+		expect_token_kind("(", TokenKind::LParenthesis);
+	}
+
+	#[test]
+	fn right_parenthesis_token() {
+		expect_token_kind(")", TokenKind::RParenthesis);
+	}
+
+	#[test]
+	fn equal_token() {
+		expect_token_kind("=", TokenKind::Equal);
+	}
+
+	#[test]
+	fn semilicon_token() {
+		expect_token_kind(";", TokenKind::Semilicon);
+	}
+
+	#[test]
+	fn eof_token() {
+		expect_token_kind("", TokenKind::Eof);
 	}
 }

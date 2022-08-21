@@ -2,7 +2,7 @@ use jpl::interpretor;
 use jpl::lexer;
 use jpl::parser;
 fn main() {
-	let program = "(6 * 2) + (2 * 3)";
+	let program = "Test = (6 * 2) + (2 * 3) + 3;test = 32.5;";
 	
 	let mut lexer = lexer::Lexer::new(program);
 
@@ -10,6 +10,8 @@ fn main() {
 
 	let ast = parser.ast();
 
-	let mut interpretor = interpretor::InterpretorVisitor::new();
-	interpretor.interpret(ast);
+	if let Some(node) = ast {
+		let mut interpretor = interpretor::InterpretorVisitor::new();
+		interpretor.interpret(node);
+	}
 }

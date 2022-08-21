@@ -1,3 +1,5 @@
+use core::panic;
+
 use crate::lexer::{Lexer, Token, TokenKind};
 use crate::visitor::{Visitable, Visitor};
 
@@ -13,10 +15,19 @@ pub enum Operator {
 pub enum Node {
 	Int(i64),
 	Float(f64),
+	Identifier(String),
 	BinaryOp {
 		op: Operator,
 		left: Box<Node>,
 		right: Box<Node>
+	},
+	Assignation {
+		name: String,
+		value: Box<Node>
+	},
+	InstructionList {
+		current: Box<Node>,
+		next: Box<Option<Node>>
 	}
 }
 
@@ -25,7 +36,10 @@ impl Visitable for Node {
         match self {
             Node::Int(x) => visitor.visit_int(*x),
             Node::Float(x) => visitor.visit_float(*x),
-            Node::BinaryOp { op, left, right } => visitor.visit_binary_op(op, left, right)
+			Node::Identifier(name) => visitor.visit_identifier(name),
+            Node::BinaryOp { op, left, right } => visitor.visit_binary_op(op, left, right),
+			Node::Assignation { name, value } => visitor.visit_assignation(name, value),
+			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next)
         }
     }
 }
@@ -67,31 +81,41 @@ impl Parser<'_> {
 	}
 
 	fn f(&mut self) -> Node {
-		if self.expect(TokenKind::Integer) {
-			let value = self.current_token.value.parse::<i64>().unwrap();
+		match self.current_token.kind {
+			TokenKind::Integer => {
+				let value = self.current_token.value.parse::<i64>().unwrap();
 
-			self.eat(TokenKind::Integer);
+				self.eat(TokenKind::Integer);
 
-			return Node::Int(value);
+				return Node::Int(value);
+			},
+			TokenKind::Float => {
+				let value = self.current_token.value.parse::<f64>().unwrap();
+
+				self.eat(TokenKind::Float);
+
+				return Node::Float(value);
+			},
+			TokenKind::Identifier => {
+				let name = self.current_token.value.clone();
+
+				self.eat(TokenKind::Identifier);
+
+				return Node::Identifier(name);
+			},
+			TokenKind::LParenthesis => {
+				self.eat(TokenKind::LParenthesis);
+
+				let exp = self.e();
+
+				self.eat(TokenKind::RParenthesis);
+
+				return exp;
+			},
+			_ => {
+				panic!("F : no valid token kind");
+			}
 		}
-		else if self.expect(TokenKind::Float) {
-			let value = self.current_token.value.parse::<f64>().unwrap();
-
-			self.eat(TokenKind::Float);
-
-			return Node::Float(value);
-		}
-		else if self.expect(TokenKind::LParenthesis) {
-			self.eat(TokenKind::LParenthesis);
-
-			let exp = self.e();
-
-			self.eat(TokenKind::RParenthesis);
-
-			return exp;
-		}
-
-		panic!("F : no valid token kind");
 	}
 
 	fn g(&mut self, previous : Node) -> Option<Node> {
@@ -149,7 +173,43 @@ impl Parser<'_> {
 		}
 	}
 
-	pub fn ast(&mut self) -> Node {
-		return self.e();
+	fn instr(&mut self) -> Node {
+		match self.current_token.kind {
+			TokenKind::Identifier => { 
+				let name = self.current_token.value.clone();
+
+				self.eat(TokenKind::Identifier);
+				self.eat(TokenKind::Equal);
+
+				let value = self.e();
+
+				self.eat(TokenKind::Semilicon);
+
+				Node::Assignation { 
+					name: name,
+					value: Box::new(value)
+				}
+			},
+			_ => { panic!("instr : no valid token kind"); }
+		}
+	}
+
+	fn list_instr(&mut self) -> Option<Node> {
+		if self.expect(TokenKind::Eof) {
+			return None;
+		}
+
+		Some(Node::InstructionList { 
+			current: Box::new(self.instr()),
+			next: Box::new(self.list_instr()) 
+		})
+	}
+
+	fn prgm(&mut self) -> Option<Node> {
+		self.list_instr()
+	}
+
+	pub fn ast(&mut self) -> Option<Node> {
+		return self.prgm();
 	}
 }

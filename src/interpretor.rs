@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::parser::{Node, Operator};
 use crate::visitor::{Visitor, Visitable};
 
@@ -9,20 +11,22 @@ enum ExpressionResult {
 
 pub struct InterpretorVisitor { 
 	result: ExpressionResult,
+	memory: HashMap<String, ExpressionResult>
 }
 
 impl InterpretorVisitor {
 	pub fn new() -> InterpretorVisitor {
 		// TODO: Fixme this awfull placeholder
 		InterpretorVisitor {
-			result: ExpressionResult::Float(0.0)
+			result: ExpressionResult::Float(0.0),
+			memory: HashMap::new()
 		}
 	}
 
 	pub fn interpret(&mut self, ast : Node) {
 		ast.accept(self);
 
-		println!("{:?}", self.result);
+		println!("{:?}", self.memory);
 	}
 
 	fn apply_op_float(op: &Operator, lhs: f64, rhs: f64) -> f64{
@@ -82,6 +86,28 @@ impl Visitor for InterpretorVisitor {
 					}
 				}
 			}
+		}
+	}
+
+	fn visit_assignation(&mut self, name: &String, value: &Node) {
+		value.accept(self);
+
+		self.memory.insert(name.clone(), self.result);
+	}
+
+	fn visit_identifier(&mut self, name: &String) {
+		let result = self.memory.get(name);
+		match result {
+			Some(x) => { self.result = *x },
+			None => panic!("Identifier not declared")
+		}
+	}
+
+	fn visit_instruction_list(&mut self, current: &Node, next: &Option<Node>) {
+		current.accept(self);
+
+		if let Some(x) = next {
+			x.accept(self);
 		}
 	}
 }
