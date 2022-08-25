@@ -89,10 +89,16 @@ impl Visitor for InterpretorVisitor {
 		}
 	}
 
-	fn visit_assignation(&mut self, name: &String, value: &Node) {
+	fn visit_var_declaration(&mut self, name: &String, value: &Node) {
 		value.accept(self);
 
 		self.memory.insert(name.clone(), self.result);
+	}
+
+	fn visit_var_assignation(&mut self, name: &String, value: &Node) {
+		value.accept(self);
+
+		self.memory.entry(name.clone()).and_modify(|e| { *e = self.result });
 	}
 
 	fn visit_identifier(&mut self, name: &String) {

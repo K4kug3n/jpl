@@ -22,17 +22,18 @@ Hardly inspired by Compilers & Interpreters course from University of Geneva
 PGRM &rarr; LIST_INSTR  
 
 LIST_INSTR &rarr; INSTR LIST_INSTR  
-LIST_INSTR &rarr; eps  
+LIST_INSTR &rarr; ε  
 INSTR &rarr; let *id* = E;  
+INSTR &rarr; *id* = E;  
 
 E &rarr; T D  
 D &rarr; + E  
 D &rarr; - E  
-D &rarr; eps  
+D &rarr; ε  
 T &rarr; F G  
 G &rarr; * E  
 G &rarr; / E  
-G &rarr; eps  
+G &rarr; ε  
 F &rarr; ( E )  
 F &rarr; *id*  
 F &rarr; *nb*  

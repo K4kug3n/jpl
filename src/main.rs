@@ -1,8 +1,13 @@
 use jpl::interpretor;
 use jpl::lexer;
 use jpl::parser;
+
 fn main() {
-	let program = "let Test = (6 * 2) + (2 * 3) + 3;let test = 32.5;";
+	let program = "
+		let Test = (6 * 2) + (2 * 3) + 3;
+		let test = 32.5;
+		Test = 2;
+	";
 	
 	let mut lexer = lexer::Lexer::new(program);
 

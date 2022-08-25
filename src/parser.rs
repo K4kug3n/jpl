@@ -25,6 +25,10 @@ pub enum Node {
 		name: String,
 		value: Box<Node>
 	},
+	VarAssignation {
+		name: String,
+		value: Box<Node>
+	},
 	InstructionList {
 		current: Box<Node>,
 		next: Box<Option<Node>>
@@ -38,8 +42,9 @@ impl Visitable for Node {
             Node::Float(x) => visitor.visit_float(*x),
 			Node::Identifier(name) => visitor.visit_identifier(name),
             Node::BinaryOp { op, left, right } => visitor.visit_binary_op(op, left, right),
-			Node::VarDeclaration { name, value } => visitor.visit_assignation(name, value),
-			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next)
+			Node::VarDeclaration { name, value } => visitor.visit_var_declaration(name, value),
+			Node::VarAssignation { name, value } => visitor.visit_var_assignation(name, value),
+			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next),
         }
     }
 }
@@ -192,6 +197,21 @@ impl Parser<'_> {
 					value: Box::new(value)
 				}
 			},
+			TokenKind::Identifier => {
+				let name = self.current_token.value.clone();
+				self.eat(TokenKind::Identifier);
+
+				self.eat(TokenKind::Equal);
+
+				let value = self.e();
+
+				self.eat(TokenKind::Semilicon);
+
+				Node::VarAssignation { 
+					name: name,
+					value: Box::new(value)
+				}
+			}
 			_ => { panic!("instr : no valid token kind"); }
 		}
 	}
