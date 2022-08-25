@@ -10,6 +10,7 @@ pub enum TokenKind {
 	LParenthesis,
 	RParenthesis,
 	Equal,
+	Let,
 	Semilicon,
 	Eof
 }
@@ -22,69 +23,62 @@ pub struct Token {
 
 pub struct Lexer<'a> {
 	program_iterator: std::str::Chars<'a>,
-	current_value: Option<char>,
+	next_char: Option<char>,
+	current_word: Option<String>,
 }
 
 impl Lexer<'_> {
+	// TODO: Change this to static hashmap
+	const RESERVED_KEYWORDS : [&'static str; 1] = ["let"];
+	const RESERVED_SYMBOLS : [&'static str; 8] = ["+", "-", "*", "/", "(", ")", "=", ";"];
+
 	pub fn new(program: &str) -> Lexer {
 		let mut new_lexer = Lexer {
 			program_iterator: program.chars(),
-			current_value: None
+			next_char: None,
+			current_word: None,
 		};
+
+		new_lexer.next_char = new_lexer.program_iterator.next();
 
 		new_lexer.advance();
 
 		new_lexer
 	}
 
+	fn is_blank_space(value : char) -> bool {
+		value == ' ' || value == '\n' || value == '\t'
+	}
+
+	fn next(&mut self) -> Option<char> {
+		let current_char = self.next_char;
+		self.next_char = self.program_iterator.next();
+
+		current_char
+	}
+
 	fn advance(&mut self) {
-		self.current_value = self.program_iterator.next();
+		let mut current_char = self.next();
 
-		while self.current_value != None && self.current_value.unwrap() == ' ' {
-			self.current_value = self.program_iterator.next();
-		}
-	}
-
-	fn is_valid_identifier(value: Option<char>) -> bool {
-		match value {
-			None => false,
-			Some(i) => {
-				i.is_alphabetic()
-			}
-		}
-	}
-
-	fn is_valid_number(value: Option<char>) -> bool {
-		match value {
-			None => false,
-			Some(i) => {
-				i.is_numeric() || i == '.'
-			}
-		}
-	}
-
-	fn parse_number(&mut self) -> String {
-		let mut word = String::new();
-
-		while Lexer::<'_>::is_valid_number(self.current_value) {
-			word.push(self.current_value.unwrap());
-
-			self.advance();
+		while current_char != None && Lexer::<'_>::is_blank_space(current_char.unwrap()) {
+			current_char = self.next();
 		}
 
-		return word;
-	}
-
-	fn parse_identifier(&mut self) -> String {
-		let mut word = String::new();
-
-		while Lexer::<'_>::is_valid_identifier(self.current_value) {
-			word.push(self.current_value.unwrap());
-
-			self.advance();
+		if current_char == None {
+			self.current_word = None;
+			return;
 		}
 
-		return word;
+		if Lexer::<'_>::RESERVED_SYMBOLS.contains(&current_char.unwrap().to_string().as_str()) {
+			self.current_word = Some(current_char.unwrap().to_string());
+			return;
+		}
+
+		let mut word = current_char.unwrap().to_string();
+		while self.next_char != None && !Lexer::<'_>::is_blank_space(self.next_char.unwrap()) && !Lexer::<'_>::RESERVED_SYMBOLS.contains(&self.next_char.unwrap().to_string().as_str()) {
+			word.push(self.next().unwrap());
+		}
+		self.current_word = Some(word);
 	}
 
 	fn to_token(current_word: String) -> Token {
@@ -97,34 +91,33 @@ impl Lexer<'_> {
 			")" => Token{ kind: TokenKind::RParenthesis, value: String::from(")") },
 			"=" => Token{ kind: TokenKind::Equal, value: String::from("=") },
 			";" => Token{ kind: TokenKind::Semilicon, value: String::from(";") },
+			"let" => Token{ kind: TokenKind::Let, value: String::from("let") },
 			_ => panic!("Unknow token")
 		}
 	}
 
 	pub fn next_token(&mut self) -> Token {
-		if self.current_value == None {
+		if self.current_word == None {
 			return Token{ kind: TokenKind::Eof, value: String::new() };
 		}
 
-		let value : char = self.current_value.unwrap();
-
-		if value.is_digit(10){
-			let number = self.parse_number();
-			if number.contains('.') {
-				return Token{ kind: TokenKind::Float, value: number };
-			}
-			else {
-				return Token{ kind: TokenKind::Integer, value: number };
-			}
-		}
-
-		if value.is_alphabetic() {
-			return Token{ kind: TokenKind::Identifier, value: self.parse_identifier() };
-		}
-
+		let word : String = self.current_word.as_ref().unwrap().to_string();
 		self.advance();
 
-		Lexer::<'_>::to_token(value.to_string())
+		if word.chars().nth(0).unwrap().is_digit(10){
+			if word.contains('.') {
+				return Token{ kind: TokenKind::Float, value: word };
+			}
+			else {
+				return Token{ kind: TokenKind::Integer, value: word };
+			}
+		}
+
+		if Lexer::<'_>::RESERVED_KEYWORDS.contains(&word.as_str()) || Lexer::<'_>::RESERVED_SYMBOLS.contains(&word.as_str()) {
+			return Lexer::<'_>::to_token(word);
+		}
+
+		Token{ kind: TokenKind::Identifier, value: word }
 	}
 }
 
@@ -197,6 +190,11 @@ mod tests {
 	#[test]
 	fn semilicon_token() {
 		expect_token_kind(";", TokenKind::Semilicon);
+	}
+
+	#[test]
+	fn let_token() {
+		expect_token_kind("let", TokenKind::Let);
 	}
 
 	#[test]
