@@ -23,7 +23,7 @@ PGRM &rarr; LIST_INSTR
 
 LIST_INSTR &rarr; INSTR LIST_INSTR  
 LIST_INSTR &rarr; eps  
-INSTR &rarr; id = E;  
+INSTR &rarr; let *id* = E;  
 
 E &rarr; T D  
 D &rarr; + E  
@@ -34,5 +34,5 @@ G &rarr; * E
 G &rarr; / E  
 G &rarr; eps  
 F &rarr; ( E )  
-F &rarr; id  
-F &rarr; nb  
+F &rarr; *id*  
+F &rarr; *nb*  

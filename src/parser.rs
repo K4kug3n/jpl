@@ -21,7 +21,7 @@ pub enum Node {
 		left: Box<Node>,
 		right: Box<Node>
 	},
-	Assignation {
+	VarDeclaration {
 		name: String,
 		value: Box<Node>
 	},
@@ -38,7 +38,7 @@ impl Visitable for Node {
             Node::Float(x) => visitor.visit_float(*x),
 			Node::Identifier(name) => visitor.visit_identifier(name),
             Node::BinaryOp { op, left, right } => visitor.visit_binary_op(op, left, right),
-			Node::Assignation { name, value } => visitor.visit_assignation(name, value),
+			Node::VarDeclaration { name, value } => visitor.visit_assignation(name, value),
 			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next)
         }
     }
@@ -175,7 +175,9 @@ impl Parser<'_> {
 
 	fn instr(&mut self) -> Node {
 		match self.current_token.kind {
-			TokenKind::Identifier => { 
+			TokenKind::Let => {
+				self.eat(TokenKind::Let);
+				
 				let name = self.current_token.value.clone();
 
 				self.eat(TokenKind::Identifier);
@@ -185,7 +187,7 @@ impl Parser<'_> {
 
 				self.eat(TokenKind::Semilicon);
 
-				Node::Assignation { 
+				Node::VarDeclaration { 
 					name: name,
 					value: Box::new(value)
 				}
