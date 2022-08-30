@@ -1,3 +1,5 @@
+use crate::text_iterator::{TextIterator, Symbol};
+
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
 	Add,
@@ -25,13 +27,12 @@ pub struct Token {
 }
 
 pub struct Lexer<'a> {
-	program_iterator: std::str::Chars<'a>,
-	next_char: Option<char>,
+	program_iterator: TextIterator<'a>,
+	next_symbol: Option<Symbol>,
 	current_word: Option<String>,
 
 	start_word_col: usize,
-	next_col: usize,
-	current_line: usize,
+	start_word_line: usize
 }
 
 impl Lexer<'_> {
@@ -41,16 +42,15 @@ impl Lexer<'_> {
 
 	pub fn new(program: &str) -> Lexer {
 		let mut new_lexer = Lexer {
-			program_iterator: program.chars(),
-			next_char: None,
+			program_iterator: TextIterator::new(program),
+			next_symbol: None,
 			current_word: None,
 
 			start_word_col: 0,
-			next_col: 0,
-			current_line: 0
+			start_word_line: 0,
 		};
 
-		new_lexer.next_char = new_lexer.program_iterator.next();
+		new_lexer.next_symbol = new_lexer.program_iterator.next();
 
 		new_lexer.advance();
 
@@ -61,41 +61,37 @@ impl Lexer<'_> {
 		value == ' ' || value == '\n' || value == '\t'
 	}
 
-	fn next(&mut self) -> Option<char> {
-		let current_char = self.next_char;
-		self.next_char = self.program_iterator.next();
-		self.next_col += 1;
+	fn next(&mut self) -> Option<Symbol> {
+		let current_symbol = self.next_symbol;
+		self.next_symbol = self.program_iterator.next();
 
-		current_char
+		current_symbol
 	}
 
 	fn advance(&mut self) {
-		let mut current_char = self.next();
+		let mut current_symbol = self.next();
 
-		while current_char != None && Lexer::<'_>::is_blank_space(current_char.unwrap()) {
-			if current_char.unwrap() == '\n' {
-				self.next_col = 0; // wil be incremented by .next() call
-				self.current_line += 1;
-			}
-
-			current_char = self.next();
+		while current_symbol != None && Lexer::<'_>::is_blank_space(current_symbol.unwrap().value) {
+			current_symbol = self.next();
 		}
 
-		if current_char == None {
+		if current_symbol == None {
 			self.current_word = None;
 			return;
 		}
 
-		if Lexer::<'_>::RESERVED_SYMBOLS.contains(&current_char.unwrap().to_string().as_str()) {
-			self.current_word = Some(current_char.unwrap().to_string());
-			self.start_word_col = self.next_col - 1;
+		if Lexer::<'_>::RESERVED_SYMBOLS.contains(&current_symbol.unwrap().value.to_string().as_str()) {
+			self.current_word = Some(current_symbol.unwrap().value.to_string());
+			self.start_word_col = current_symbol.unwrap().col;
+			self.start_word_line = current_symbol.unwrap().line;
 			return;
 		}
 
-		let mut word = current_char.unwrap().to_string();
-		self.start_word_col = self.next_col - 1;
-		while self.next_char != None && !Lexer::<'_>::is_blank_space(self.next_char.unwrap()) && !Lexer::<'_>::RESERVED_SYMBOLS.contains(&self.next_char.unwrap().to_string().as_str()) {
-			word.push(self.next().unwrap());
+		let mut word = current_symbol.unwrap().value.to_string();
+		self.start_word_col = current_symbol.unwrap().col;
+		self.start_word_line = current_symbol.unwrap().line;
+		while self.next_symbol != None && !Lexer::<'_>::is_blank_space(self.next_symbol.unwrap().value) && !Lexer::<'_>::RESERVED_SYMBOLS.contains(&self.next_symbol.unwrap().value.to_string().as_str()) {
+			word.push(self.next().unwrap().value);
 		}
 		self.current_word = Some(word);
 	}
@@ -117,12 +113,17 @@ impl Lexer<'_> {
 
 	pub fn next_token(&mut self) -> Token {
 		if self.current_word == None {
-			return Token{ kind: TokenKind::Eof, value: String::new(), start_col: self.next_col - 1, start_line: self.current_line };
+			return Token{ 
+				kind: TokenKind::Eof,
+				value: String::new(),
+				start_col: self.start_word_col,
+				start_line: self.start_word_line 
+			};
 		}
 
 		let word : String = self.current_word.as_ref().unwrap().to_string();
 		let word_col = self.start_word_col;
-		let word_line = self.current_line;
+		let word_line = self.start_word_line;
 		self.advance();
 
 		if word.chars().nth(0).unwrap().is_digit(10){
