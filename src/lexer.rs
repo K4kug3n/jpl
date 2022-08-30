@@ -1,5 +1,32 @@
 use crate::text_iterator::{TextIterator, Symbol};
 
+#[derive(PartialEq)]
+struct Word {
+	value: String,
+	start_col: usize,
+	start_line: usize,
+}
+
+impl Word {
+	fn from_symbol(symbol: Symbol) -> Word {
+		Word {
+			value: symbol.value.to_string(),
+			start_col: symbol.col,
+			start_line: symbol.line,
+		}
+	}
+
+	fn is_numeric(&self) -> bool {
+		for c in self.value.chars() {
+			if !c.is_numeric() && c != '.' {
+				return false;
+			}
+		}
+
+		return true;
+	}
+}
+
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
 	Add,
@@ -26,13 +53,20 @@ pub struct Token {
 	pub start_line: usize,
 }
 
+impl Token {
+	fn from_word(kind: TokenKind, word: Word) -> Token {
+		Token {
+			kind: kind,
+			value: word.value,
+			start_col: word.start_col,
+			start_line: word.start_line
+		}
+	}
+}
+
 pub struct Lexer<'a> {
 	program_iterator: TextIterator<'a>,
 	next_symbol: Option<Symbol>,
-	current_word: Option<String>,
-
-	start_word_col: usize,
-	start_word_line: usize
 }
 
 impl Lexer<'_> {
@@ -44,15 +78,9 @@ impl Lexer<'_> {
 		let mut new_lexer = Lexer {
 			program_iterator: TextIterator::new(program),
 			next_symbol: None,
-			current_word: None,
-
-			start_word_col: 0,
-			start_word_line: 0,
 		};
 
 		new_lexer.next_symbol = new_lexer.program_iterator.next();
-
-		new_lexer.advance();
 
 		new_lexer
 	}
@@ -68,7 +96,7 @@ impl Lexer<'_> {
 		current_symbol
 	}
 
-	fn advance(&mut self) {
+	fn advance(&mut self) -> Option<Word> {
 		let mut current_symbol = self.next();
 
 		while current_symbol != None && Lexer::<'_>::is_blank_space(current_symbol.unwrap().value) {
@@ -76,70 +104,69 @@ impl Lexer<'_> {
 		}
 
 		if current_symbol == None {
-			self.current_word = None;
-			return;
+			return None;
 		}
-
+ 
 		if Lexer::<'_>::RESERVED_SYMBOLS.contains(&current_symbol.unwrap().value.to_string().as_str()) {
-			self.current_word = Some(current_symbol.unwrap().value.to_string());
-			self.start_word_col = current_symbol.unwrap().col;
-			self.start_word_line = current_symbol.unwrap().line;
-			return;
+			return Some(Word::from_symbol(current_symbol.unwrap()));
 		}
 
-		let mut word = current_symbol.unwrap().value.to_string();
-		self.start_word_col = current_symbol.unwrap().col;
-		self.start_word_line = current_symbol.unwrap().line;
-		while self.next_symbol != None && !Lexer::<'_>::is_blank_space(self.next_symbol.unwrap().value) && !Lexer::<'_>::RESERVED_SYMBOLS.contains(&self.next_symbol.unwrap().value.to_string().as_str()) {
-			word.push(self.next().unwrap().value);
+		let mut word = Word::from_symbol(current_symbol.unwrap());
+		while let Some(symbol) = self.next_symbol {
+			if Lexer::<'_>::is_blank_space(symbol.value) || Lexer::<'_>::RESERVED_SYMBOLS.contains(&symbol.value.to_string().as_str()) {
+				break;
+			}
+
+			word.value.push(symbol.value);
+			self.next();
 		}
-		self.current_word = Some(word);
+
+		Some(word)
 	}
 
-	fn to_token(current_word: String, word_col: usize, word_line: usize) -> Token {
-		match current_word.as_str() {
-			"+" => Token{ kind: TokenKind::Add, value: String::from("+"), start_col: word_col, start_line: word_line },
-			"-" => Token{ kind: TokenKind::Minus, value: String::from("-"), start_col: word_col, start_line: word_line },
-			"*" => Token{ kind: TokenKind::Product, value: String::from("*"), start_col: word_col, start_line: word_line },
-			"/" => Token{ kind: TokenKind::Divide, value: String::from("/"), start_col: word_col, start_line: word_line },
-			"(" => Token{ kind: TokenKind::LParenthesis, value: String::from("("), start_col: word_col, start_line: word_line },
-			")" => Token{ kind: TokenKind::RParenthesis, value: String::from(")"), start_col: word_col, start_line: word_line },
-			"=" => Token{ kind: TokenKind::Equal, value: String::from("="), start_col: word_col, start_line: word_line },
-			";" => Token{ kind: TokenKind::Semilicon, value: String::from(";"), start_col: word_col, start_line: word_line },
-			"let" => Token{ kind: TokenKind::Let, value: String::from("let"), start_col: word_col, start_line: word_line },
+	fn get_kind(value: &str) -> TokenKind {
+		match value {
+			"+" => TokenKind::Add,
+			"-" => TokenKind::Minus,
+			"*" => TokenKind::Product,
+			"/" => TokenKind::Divide,
+			"(" => TokenKind::LParenthesis,
+			")" => TokenKind::RParenthesis,
+			"=" => TokenKind::Equal,
+			";" => TokenKind::Semilicon,
+			"let" => TokenKind::Let,
 			_ => panic!("Unknow token")
 		}
 	}
 
 	pub fn next_token(&mut self) -> Token {
-		if self.current_word == None {
+		let opt_word = self.advance();
+
+		if opt_word == None {
 			return Token{ 
 				kind: TokenKind::Eof,
 				value: String::new(),
-				start_col: self.start_word_col,
-				start_line: self.start_word_line 
+				start_col: 0,
+				start_line: 0 
 			};
 		}
 
-		let word : String = self.current_word.as_ref().unwrap().to_string();
-		let word_col = self.start_word_col;
-		let word_line = self.start_word_line;
-		self.advance();
+		let word : Word = opt_word.unwrap();
 
-		if word.chars().nth(0).unwrap().is_digit(10){
-			if word.contains('.') {
-				return Token{ kind: TokenKind::Float, value: word, start_col: word_col, start_line: word_line };
+		if word.is_numeric() {
+			if word.value.contains('.') {
+				return Token::from_word(TokenKind::Float, word);
 			}
 			else {
-				return Token{ kind: TokenKind::Integer, value: word, start_col: word_col, start_line: word_line };
+				return Token::from_word(TokenKind::Integer, word);
 			}
 		}
 
-		if Lexer::<'_>::RESERVED_KEYWORDS.contains(&word.as_str()) || Lexer::<'_>::RESERVED_SYMBOLS.contains(&word.as_str()) {
-			return Lexer::<'_>::to_token(word, word_col, word_line);
+		if Lexer::<'_>::RESERVED_KEYWORDS.contains(&word.value.as_str()) || Lexer::<'_>::RESERVED_SYMBOLS.contains(&word.value.as_str()) {
+			return Token::from_word(Lexer::<'_>::get_kind(&word.value), word);
 		}
 
-		Token{ kind: TokenKind::Identifier, value: word, start_col: word_col, start_line: word_line }
+		Token::from_word(TokenKind::Identifier, word)
 	}
 }
 
