@@ -89,26 +89,19 @@ impl Visitor for InterpretorVisitor {
 		
 		match left_result {
 			ExpressionResult::Int(lhs) => {
-				match right_result {
-					ExpressionResult::Int(rhs) => {
-						self.result = ExpressionResult::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs));
-					},
-					ExpressionResult::Float(rhs) => {
-						self.result = ExpressionResult::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs as i64));
-					},
-					_ => panic!("Wrong type") // TODO: Type checking
+				if let ExpressionResult::Int(rhs) = right_result {
+					self.result = ExpressionResult::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs));
+				}
+				else {
+					panic!("Wrong type") // TODO: Type checking
 				}
 			},
 			ExpressionResult::Float(lhs) => {
-				match right_result {
-					ExpressionResult::Int(rhs) => {
-						self.result = ExpressionResult::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs as f64));
-						
-					},
-					ExpressionResult::Float(rhs) => {
-						self.result = ExpressionResult::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs));
-					},
-					_ => panic!("Wrong type") // TODO: Type checking
+				if let ExpressionResult::Float(rhs) = right_result {
+					self.result = ExpressionResult::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs));
+				}
+				else {
+					panic!("Wrong type") // TODO: Type checking
 				}
 			},
 			ExpressionResult::Bool(lhs) => {
@@ -117,7 +110,7 @@ impl Visitor for InterpretorVisitor {
 				}
 				else {
 					panic!("Wrong type") // TODO: Type checking
-				}	
+				}
 			}
 		}
 	}
