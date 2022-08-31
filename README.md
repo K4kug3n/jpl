@@ -25,18 +25,18 @@ LIST_INSTR &rarr; INSTR LIST_INSTR
 LIST_INSTR &rarr; ε  
 INSTR &rarr; let *id* = E;  
 INSTR &rarr; *id* = E;  
-INSTR &rarr; let *id* = BOOL_EXP;  
-
-BOOL_EXP &rarr; *bool*  
 
 E &rarr; T D  
 D &rarr; + E  
 D &rarr; - E  
+D &rarr; || E  
 D &rarr; ε  
 T &rarr; F G  
 G &rarr; * E  
 G &rarr; / E  
+G &rarr; && E 
 G &rarr; ε  
 F &rarr; ( E )  
 F &rarr; *id*  
 F &rarr; *nb*  
+F &rarr; *bool*  

@@ -30,21 +30,31 @@ impl InterpretorVisitor {
 		println!("{:?}", self.memory);
 	}
 
-	fn apply_op_float(op: &Operator, lhs: f64, rhs: f64) -> f64{
+	fn apply_op_float(op: &Operator, lhs: f64, rhs: f64) -> f64 {
 		match op {
 			Operator::Add => lhs + rhs,
 			Operator::Minus => lhs - rhs,
 			Operator::Product => lhs * rhs,
-			Operator::Divide => lhs / rhs
+			Operator::Divide => lhs / rhs,
+			_ => panic!("Wrong type")
 		}
 	}
 
-	fn apply_op_int(op: &Operator, lhs: i64, rhs: i64) -> i64{
+	fn apply_op_int(op: &Operator, lhs: i64, rhs: i64) -> i64 {
 		match op {
 			Operator::Add => lhs + rhs,
 			Operator::Minus => lhs - rhs,
 			Operator::Product => lhs * rhs,
-			Operator::Divide => lhs / rhs
+			Operator::Divide => lhs / rhs,
+			_ => panic!("Wrong type")
+		}
+	}
+
+	fn apply_op_bool(op: &Operator, lhs: bool, rhs: bool) -> bool {
+		match op {
+			Operator::LogicalAnd => lhs && rhs,
+			Operator::LogicalOr => lhs || rhs,
+			_ => panic!("Wrong type")
 		}
 	}
 }
@@ -86,7 +96,7 @@ impl Visitor for InterpretorVisitor {
 					ExpressionResult::Float(rhs) => {
 						self.result = ExpressionResult::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs as i64));
 					},
-					_ => panic!("Wrong type") // TODO: Error display
+					_ => panic!("Wrong type") // TODO: Type checking
 				}
 			},
 			ExpressionResult::Float(lhs) => {
@@ -98,10 +108,17 @@ impl Visitor for InterpretorVisitor {
 					ExpressionResult::Float(rhs) => {
 						self.result = ExpressionResult::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs));
 					},
-					_ => panic!("Wrong type") // TODO: Error display
+					_ => panic!("Wrong type") // TODO: Type checking
 				}
 			},
-			_ => panic!("Wrong type") // TODO: Error display
+			ExpressionResult::Bool(lhs) => {
+				if let ExpressionResult::Bool(rhs) = right_result {
+					self.result = ExpressionResult::Bool(InterpretorVisitor::apply_op_bool(op, lhs, rhs));
+				}
+				else {
+					panic!("Wrong type") // TODO: Type checking
+				}	
+			}
 		}
 	}
 

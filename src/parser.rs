@@ -8,7 +8,9 @@ pub enum Operator {
 	Add,
 	Minus,
 	Product,
-	Divide
+	Divide,
+	LogicalAnd,
+	LogicalOr,
 }
 
 #[derive(Debug, Clone)]
@@ -49,6 +51,10 @@ impl Visitable for Node {
 			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next),
         }
     }
+}
+
+fn to_bool(value: &str) -> bool {
+	value == "true"
 }
 
 pub struct Parser<'a> {
@@ -103,6 +109,13 @@ impl Parser<'_> {
 
 				return Node::Float(value);
 			},
+			TokenKind::Bool => {
+				let value = to_bool(&self.current_token.value);
+
+				self.eat(TokenKind::Bool);
+
+				return Node::Bool(value);
+			},
 			TokenKind::Identifier => {
 				let name = self.current_token.value.clone();
 
@@ -139,7 +152,16 @@ impl Parser<'_> {
 			self.eat(TokenKind::Divide);
 
 			return Some(Node::BinaryOp { 
-				op:Operator::Divide, 
+				op: Operator::Divide, 
+				left: Box::new(previous), 
+				right: Box::new(self.e()) 
+			});
+		}
+		else if self.expect(TokenKind::LogicalAnd) {
+			self.eat(TokenKind::LogicalAnd);
+
+			return Some(Node::BinaryOp { 
+				op: Operator::LogicalAnd, 
 				left: Box::new(previous), 
 				right: Box::new(self.e()) 
 			});
@@ -153,7 +175,7 @@ impl Parser<'_> {
 			self.eat(TokenKind::Add);
 
 			return Some(Node::BinaryOp { 
-				op:Operator::Add, 
+				op: Operator::Add, 
 				left: Box::new(previous), 
 				right: Box::new(self.e()) 
 			});
@@ -162,7 +184,17 @@ impl Parser<'_> {
 			self.eat(TokenKind::Minus);
 
 			return Some(Node::BinaryOp { 
-				op:Operator::Minus, 
+				op: Operator::Minus, 
+				left: Box::new(previous), 
+				right: Box::new(self.e()) 
+			});
+
+		}
+		else if self.expect(TokenKind::LogicalOr) {
+			self.eat(TokenKind::LogicalOr);
+
+			return Some(Node::BinaryOp { 
+				op: Operator::LogicalOr,
 				left: Box::new(previous), 
 				right: Box::new(self.e()) 
 			});
@@ -180,19 +212,6 @@ impl Parser<'_> {
 		}
 	}
 
-	fn bool_exp(&mut self) -> Node {
-		let value = self.current_token.value.clone();
-
-		self.eat(TokenKind::Bool);
-
-		if value == "true" {
-			Node::Bool(true)
-		}
-		else{
-			Node::Bool(false)
-		}
-	}
-
 	fn instr(&mut self) -> Node {
 		match self.current_token.kind {
 			TokenKind::Let => {
@@ -203,25 +222,13 @@ impl Parser<'_> {
 				self.eat(TokenKind::Identifier);
 				self.eat(TokenKind::Equal);
 
-				if self.expect(TokenKind::Bool) {
-					let value = self.bool_exp();
+				let value = self.e();
 
-					self.eat(TokenKind::Semilicon);
+				self.eat(TokenKind::Semilicon);
 
-					Node::VarDeclaration { 
-						name: name,
-						value: Box::new(value)
-					}
-				}
-				else {
-					let value = self.e();
-
-					self.eat(TokenKind::Semilicon);
-
-					Node::VarDeclaration { 
-						name: name,
-						value: Box::new(value)
-					}
+				Node::VarDeclaration { 
+					name: name,
+					value: Box::new(value)
 				}
 			},
 			TokenKind::Identifier => {

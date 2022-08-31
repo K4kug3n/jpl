@@ -33,6 +33,8 @@ pub enum TokenKind {
 	Minus,
 	Product,
 	Divide,
+	LogicalAnd,
+	LogicalOr,
 	Integer,
 	Float,
 	Bool,
@@ -72,7 +74,7 @@ pub struct Lexer<'a> {
 
 impl Lexer<'_> {
 	// TODO: Change this to static hashmap
-	const RESERVED_KEYWORDS : [&'static str; 3] = ["let", "true", "false"];
+	const RESERVED_KEYWORDS : [&'static str; 5] = ["let", "true", "false", "&&", "||"];
 	const RESERVED_SYMBOLS : [&'static str; 8] = ["+", "-", "*", "/", "(", ")", "=", ";"];
 
 	pub fn new(program: &str) -> Lexer {
@@ -131,6 +133,8 @@ impl Lexer<'_> {
 			"-" => TokenKind::Minus,
 			"*" => TokenKind::Product,
 			"/" => TokenKind::Divide,
+			"&&" => TokenKind::LogicalAnd,
+			"||" => TokenKind::LogicalOr,
 			"(" => TokenKind::LParenthesis,
 			")" => TokenKind::RParenthesis,
 			"=" => TokenKind::Equal,
@@ -185,23 +189,13 @@ mod tests {
 	}
 
 	#[test]
-	fn add_token() {
+	fn op_token() {
 		expect_token_kind("+", TokenKind::Add);
-	}
-
-	#[test]
-	fn minus_token() {
 		expect_token_kind("-", TokenKind::Minus);
-	}
-
-	#[test]
-	fn product_token() {
 		expect_token_kind("*", TokenKind::Product);
-	}
-
-	#[test]
-	fn divide_token() {
 		expect_token_kind("/", TokenKind::Divide);
+		expect_token_kind("&&", TokenKind::LogicalAnd);
+		expect_token_kind("||", TokenKind::LogicalOr);
 	}
 
 	#[test]
