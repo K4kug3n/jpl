@@ -128,19 +128,6 @@ impl Lexer<'_> {
 		}
 	}
 
-	fn operator(&mut self, word: &mut Word) {
-		while let Some(symbol) = self.next_symbol {
-			if Lexer::<'_>::is_number_symbol(symbol.value) 
-			|| Lexer::<'_>::is_identifier_symbol(symbol.value) 
-			|| Lexer::<'_>::is_blank_space(symbol.value) {
-				break;
-			}
-
-			word.value.push(symbol.value);
-			self.next();
-		}
-	}
-
 	fn advance(&mut self) -> Option<Word> {
 		let mut current_symbol = self.next();
 
@@ -151,22 +138,28 @@ impl Lexer<'_> {
 		if current_symbol == None {
 			return None;
 		}
- 
+		
+		if let Some(next_symbol) = self.next_symbol { // Handle 2 caractere operator
+			let mut potential_double_op = Word::from_symbol(current_symbol.unwrap());
+			potential_double_op.value.push(next_symbol.value);
+
+			if Lexer::<'_>::RESERVED_KEYWORDS.contains(&potential_double_op.value.as_str()) {
+				self.next();
+				return Some(potential_double_op);
+			}
+		}
 		if Lexer::<'_>::RESERVED_KEYWORDS.contains(&current_symbol.unwrap().value.to_string().as_str()) {
 			return Some(Word::from_symbol(current_symbol.unwrap()));
 		}
 
 		let mut word = Word::from_symbol(current_symbol.unwrap());
-		if Lexer::<'_>::is_identifier_symbol(current_symbol.unwrap().value) {
-			self.identifier(&mut word);
-		}
-		else if Lexer::<'_>::is_number_symbol(current_symbol.unwrap().value) {
+		if Lexer::<'_>::is_number_symbol(current_symbol.unwrap().value) {
 			self.number(&mut word);
 		}
 		else {
-			self.operator(&mut word);
+			self.identifier(&mut word);
 		}
-		
+
 		Some(word)
 	}
 

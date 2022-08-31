@@ -34,7 +34,7 @@ D &rarr; ε
 T &rarr; F G  
 G &rarr; * E  
 G &rarr; / E  
-G &rarr; && E 
+G &rarr; && E  
 G &rarr; ε  
 F &rarr; ( E )  
 F &rarr; *id*  
