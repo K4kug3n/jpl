@@ -74,8 +74,7 @@ pub struct Lexer<'a> {
 
 impl Lexer<'_> {
 	// TODO: Change this to static hashmap
-	const RESERVED_KEYWORDS : [&'static str; 5] = ["let", "true", "false", "&&", "||"];
-	const RESERVED_SYMBOLS : [&'static str; 8] = ["+", "-", "*", "/", "(", ")", "=", ";"];
+	const RESERVED_KEYWORDS : [&'static str; 13] = ["+", "-", "*", "/", "(", ")", "=", ";", "&&", "||", "let", "true", "false"];
 
 	pub fn new(program: &str) -> Lexer {
 		let mut new_lexer = Lexer {
@@ -92,11 +91,54 @@ impl Lexer<'_> {
 		value == ' ' || value == '\n' || value == '\t'
 	}
 
+	fn is_identifier_symbol(value: char) -> bool {
+		value.is_alphabetic() || value == '_'
+	}
+
+	fn is_number_symbol(value: char) -> bool {
+		value.is_numeric() || value == '.'
+	}
+
 	fn next(&mut self) -> Option<Symbol> {
 		let current_symbol = self.next_symbol;
 		self.next_symbol = self.program_iterator.next();
 
 		current_symbol
+	}
+
+	fn identifier(&mut self, word: &mut Word) {
+		while let Some(symbol) = self.next_symbol {
+			if !Lexer::<'_>::is_identifier_symbol(symbol.value) {
+				break;
+			}
+
+			word.value.push(symbol.value);
+			self.next();
+		}
+	}
+
+	fn number(&mut self, word: &mut Word) {
+		while let Some(symbol) = self.next_symbol {
+			if !Lexer::<'_>::is_number_symbol(symbol.value) {
+				break;
+			}
+
+			word.value.push(symbol.value);
+			self.next();
+		}
+	}
+
+	fn operator(&mut self, word: &mut Word) {
+		while let Some(symbol) = self.next_symbol {
+			if Lexer::<'_>::is_number_symbol(symbol.value) 
+			|| Lexer::<'_>::is_identifier_symbol(symbol.value) 
+			|| Lexer::<'_>::is_blank_space(symbol.value) {
+				break;
+			}
+
+			word.value.push(symbol.value);
+			self.next();
+		}
 	}
 
 	fn advance(&mut self) -> Option<Word> {
@@ -110,20 +152,21 @@ impl Lexer<'_> {
 			return None;
 		}
  
-		if Lexer::<'_>::RESERVED_SYMBOLS.contains(&current_symbol.unwrap().value.to_string().as_str()) {
+		if Lexer::<'_>::RESERVED_KEYWORDS.contains(&current_symbol.unwrap().value.to_string().as_str()) {
 			return Some(Word::from_symbol(current_symbol.unwrap()));
 		}
 
 		let mut word = Word::from_symbol(current_symbol.unwrap());
-		while let Some(symbol) = self.next_symbol {
-			if Lexer::<'_>::is_blank_space(symbol.value) || Lexer::<'_>::RESERVED_SYMBOLS.contains(&symbol.value.to_string().as_str()) {
-				break;
-			}
-
-			word.value.push(symbol.value);
-			self.next();
+		if Lexer::<'_>::is_identifier_symbol(current_symbol.unwrap().value) {
+			self.identifier(&mut word);
 		}
-
+		else if Lexer::<'_>::is_number_symbol(current_symbol.unwrap().value) {
+			self.number(&mut word);
+		}
+		else {
+			self.operator(&mut word);
+		}
+		
 		Some(word)
 	}
 
@@ -169,7 +212,7 @@ impl Lexer<'_> {
 			}
 		}
 
-		if Lexer::<'_>::RESERVED_KEYWORDS.contains(&word.value.as_str()) || Lexer::<'_>::RESERVED_SYMBOLS.contains(&word.value.as_str()) {
+		if Lexer::<'_>::RESERVED_KEYWORDS.contains(&word.value.as_str()) {
 			return Token::from_word(Lexer::<'_>::get_kind(&word.value), word);
 		}
 
@@ -255,7 +298,7 @@ mod tests {
 	}
 
 	#[test]
-	fn kind_lexing() {
+	fn number_expression_lexing() {
 		let mut lexer = Lexer::new("let test=(2.5*3 ) + 2;");
 
 		assert_eq!(lexer.next_token().kind, TokenKind::Let);
@@ -268,6 +311,21 @@ mod tests {
 		assert_eq!(lexer.next_token().kind, TokenKind::RParenthesis);
 		assert_eq!(lexer.next_token().kind, TokenKind::Add);
 		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
+		assert_eq!(lexer.next_token().kind, TokenKind::Semilicon);
+	}
+
+	#[test]
+	fn bool_expression_lexing() {
+		let mut lexer = Lexer::new("let test=true&&false||identifier;");
+
+		assert_eq!(lexer.next_token().kind, TokenKind::Let);
+		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::Equal);
+		assert_eq!(lexer.next_token().kind, TokenKind::Bool);
+		assert_eq!(lexer.next_token().kind, TokenKind::LogicalAnd);
+		assert_eq!(lexer.next_token().kind, TokenKind::Bool);
+		assert_eq!(lexer.next_token().kind, TokenKind::LogicalOr);
+		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
 		assert_eq!(lexer.next_token().kind, TokenKind::Semilicon);
 	}
 
