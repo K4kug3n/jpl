@@ -7,6 +7,7 @@ fn main() {
 		let Test = (6 * 2) + (2 * 3) + 3;
 		let test = 32.5;
 		Test = 2;
+		let bool_test = true;
 	";
 	
 	let mut lexer = lexer::Lexer::new(program);

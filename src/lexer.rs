@@ -35,6 +35,7 @@ pub enum TokenKind {
 	Divide,
 	Integer,
 	Float,
+	Bool,
 	Identifier,
 	LParenthesis,
 	RParenthesis,
@@ -71,7 +72,7 @@ pub struct Lexer<'a> {
 
 impl Lexer<'_> {
 	// TODO: Change this to static hashmap
-	const RESERVED_KEYWORDS : [&'static str; 1] = ["let"];
+	const RESERVED_KEYWORDS : [&'static str; 3] = ["let", "true", "false"];
 	const RESERVED_SYMBOLS : [&'static str; 8] = ["+", "-", "*", "/", "(", ")", "=", ";"];
 
 	pub fn new(program: &str) -> Lexer {
@@ -135,6 +136,8 @@ impl Lexer<'_> {
 			"=" => TokenKind::Equal,
 			";" => TokenKind::Semilicon,
 			"let" => TokenKind::Let,
+			"true" => TokenKind::Bool,
+			"false" => TokenKind::Bool,
 			_ => panic!("Unknow token")
 		}
 	}
@@ -244,6 +247,12 @@ mod tests {
 	#[test]
 	fn let_token() {
 		expect_token_kind("let", TokenKind::Let);
+	}
+
+	#[test]
+	fn bool_token() {
+		expect_token_kind("true", TokenKind::Bool);
+		expect_token_kind("false", TokenKind::Bool);
 	}
 
 	#[test]

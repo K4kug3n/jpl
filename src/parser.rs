@@ -16,6 +16,7 @@ pub enum Node {
 	Int(i64),
 	Float(f64),
 	Identifier(String),
+	Bool(bool),
 	BinaryOp {
 		op: Operator,
 		left: Box<Node>,
@@ -41,6 +42,7 @@ impl Visitable for Node {
             Node::Int(x) => visitor.visit_int(*x),
             Node::Float(x) => visitor.visit_float(*x),
 			Node::Identifier(name) => visitor.visit_identifier(name),
+			Node::Bool(value) => visitor.visit_bool(*value),
             Node::BinaryOp { op, left, right } => visitor.visit_binary_op(op, left, right),
 			Node::VarDeclaration { name, value } => visitor.visit_var_declaration(name, value),
 			Node::VarAssignation { name, value } => visitor.visit_var_assignation(name, value),
@@ -88,14 +90,14 @@ impl Parser<'_> {
 	fn f(&mut self) -> Node {
 		match self.current_token.kind {
 			TokenKind::Integer => {
-				let value = self.current_token.value.parse::<i64>().unwrap();
+				let value = self.current_token.value.parse::<i64>().unwrap(); // TODO: Check it
 
 				self.eat(TokenKind::Integer);
 
 				return Node::Int(value);
 			},
 			TokenKind::Float => {
-				let value = self.current_token.value.parse::<f64>().unwrap();
+				let value = self.current_token.value.parse::<f64>().unwrap(); // TODO: Check it
 
 				self.eat(TokenKind::Float);
 
@@ -178,6 +180,19 @@ impl Parser<'_> {
 		}
 	}
 
+	fn bool_exp(&mut self) -> Node {
+		let value = self.current_token.value.clone();
+
+		self.eat(TokenKind::Bool);
+
+		if value == "true" {
+			Node::Bool(true)
+		}
+		else{
+			Node::Bool(false)
+		}
+	}
+
 	fn instr(&mut self) -> Node {
 		match self.current_token.kind {
 			TokenKind::Let => {
@@ -188,13 +203,25 @@ impl Parser<'_> {
 				self.eat(TokenKind::Identifier);
 				self.eat(TokenKind::Equal);
 
-				let value = self.e();
+				if self.expect(TokenKind::Bool) {
+					let value = self.bool_exp();
 
-				self.eat(TokenKind::Semilicon);
+					self.eat(TokenKind::Semilicon);
 
-				Node::VarDeclaration { 
-					name: name,
-					value: Box::new(value)
+					Node::VarDeclaration { 
+						name: name,
+						value: Box::new(value)
+					}
+				}
+				else {
+					let value = self.e();
+
+					self.eat(TokenKind::Semilicon);
+
+					Node::VarDeclaration { 
+						name: name,
+						value: Box::new(value)
+					}
 				}
 			},
 			TokenKind::Identifier => {

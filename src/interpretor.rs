@@ -6,7 +6,8 @@ use crate::visitor::{Visitor, Visitable};
 #[derive(Clone, Copy, Debug)]
 enum ExpressionResult {
 	Int(i64),
-	Float(f64)
+	Float(f64),
+	Bool(bool)
 }
 
 pub struct InterpretorVisitor { 
@@ -57,6 +58,18 @@ impl Visitor for InterpretorVisitor {
 		self.result = ExpressionResult::Float(value);
 	}
 
+	fn visit_bool(&mut self, value: bool) {
+		self.result = ExpressionResult::Bool(value);
+	}
+
+	fn visit_identifier(&mut self, name: &String) {
+		let result = self.memory.get(name);
+		match result {
+			Some(x) => { self.result = *x },
+			None => panic!("Identifier not declared")
+		}
+	}
+
 	fn visit_binary_op(&mut self, op: &Operator, left: &Node, right: &Node) {
 		left.accept(self);
 		let left_result = self.result;
@@ -73,6 +86,7 @@ impl Visitor for InterpretorVisitor {
 					ExpressionResult::Float(rhs) => {
 						self.result = ExpressionResult::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs as i64));
 					},
+					_ => panic!("Wrong type") // TODO: Error display
 				}
 			},
 			ExpressionResult::Float(lhs) => {
@@ -83,9 +97,11 @@ impl Visitor for InterpretorVisitor {
 					},
 					ExpressionResult::Float(rhs) => {
 						self.result = ExpressionResult::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs));
-					}
+					},
+					_ => panic!("Wrong type") // TODO: Error display
 				}
-			}
+			},
+			_ => panic!("Wrong type") // TODO: Error display
 		}
 	}
 
@@ -99,14 +115,6 @@ impl Visitor for InterpretorVisitor {
 		value.accept(self);
 
 		self.memory.entry(name.clone()).and_modify(|e| { *e = self.result });
-	}
-
-	fn visit_identifier(&mut self, name: &String) {
-		let result = self.memory.get(name);
-		match result {
-			Some(x) => { self.result = *x },
-			None => panic!("Identifier not declared")
-		}
 	}
 
 	fn visit_instruction_list(&mut self, current: &Node, next: &Option<Node>) {

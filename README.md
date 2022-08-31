@@ -17,7 +17,7 @@
 JPL is a toy language to practice programming language creation, made in Rust as learning project
 
 ## Current Grammar
-Hardly inspired by Compilers & Interpreters course from University of Geneva  
+Inspired by Compilers & Interpreters course from University of Geneva  
 
 PGRM &rarr; LIST_INSTR  
 
@@ -25,6 +25,9 @@ LIST_INSTR &rarr; INSTR LIST_INSTR
 LIST_INSTR &rarr; ε  
 INSTR &rarr; let *id* = E;  
 INSTR &rarr; *id* = E;  
+INSTR &rarr; let *id* = BOOL_EXP;  
+
+BOOL_EXP &rarr; *bool*  
 
 E &rarr; T D  
 D &rarr; + E  
