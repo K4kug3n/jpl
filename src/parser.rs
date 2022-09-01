@@ -78,19 +78,65 @@ impl Parser<'_> {
 		}
 	}
 
+	fn get_precedence(kind: &TokenKind) -> i32 {
+		match kind {
+			TokenKind::LogicalAnd => 0,
+			TokenKind::LogicalOr => 0,
+			TokenKind::LowerOrEq => 1,
+			TokenKind::GreaterOrEq => 1,
+			TokenKind::Lower => 1,
+			TokenKind::Greater => 1,
+			TokenKind::Equal => 1,
+			TokenKind::NotEqual => 1,
+			TokenKind::Add => 2,
+			TokenKind::Minus => 2,
+			TokenKind::Product => 3,
+			TokenKind::Divide => 3,
+			_ => panic!("Not a op")
+		}
+	}
+
+	fn is_op(kind: &TokenKind) -> bool {
+		*kind == TokenKind::Add || *kind == TokenKind::Minus || *kind == TokenKind::Product || *kind == TokenKind::Divide ||
+		*kind == TokenKind::LowerOrEq || *kind == TokenKind::GreaterOrEq || *kind == TokenKind::Lower || *kind == TokenKind::Greater ||
+		*kind == TokenKind::Equal || *kind == TokenKind::NotEqual || *kind == TokenKind::LogicalAnd || *kind == TokenKind::LogicalOr
+	}
+
+	fn to_op(kind: &TokenKind) -> Operator {
+		match kind {
+			TokenKind::LogicalAnd => Operator::LogicalAnd,
+			TokenKind::LogicalOr => Operator::LogicalOr,
+			TokenKind::LowerOrEq => Operator::LowerOrEq,
+			TokenKind::GreaterOrEq => Operator::GreaterOrEq,
+			TokenKind::Lower => Operator::Lower,
+			TokenKind::Greater => Operator::Greater,
+			TokenKind::Equal => Operator::Equal,
+			TokenKind::NotEqual => Operator::NotEqual,
+			TokenKind::Add => Operator::Add,
+			TokenKind::Minus => Operator::Minus,
+			TokenKind::Product => Operator::Product,
+			TokenKind::Divide => Operator::Divide,
+			_ => panic!("Not a op")
+		}
+	}
+
+	fn advance(&mut self) {
+		self.current_token = self.lexer.next_token();
+	}
+
 	fn eat(&mut self, kind: TokenKind) {
 		if self.current_token.kind != kind {
 			panic!("Can't eat this token kind");
 		}
 
-		self.current_token = self.lexer.next_token();
+		self.advance();
 	}
 
 	fn expect(&self, kind: TokenKind) -> bool {
 		self.current_token.kind == kind
 	}
 
-	fn f(&mut self) -> Node {
+	fn primary(&mut self) -> Node {
 		match self.current_token.kind {
 			TokenKind::Integer => {
 				let value = self.current_token.value.parse::<i64>().unwrap(); // TODO: Check it
@@ -123,168 +169,37 @@ impl Parser<'_> {
 			TokenKind::LParenthesis => {
 				self.eat(TokenKind::LParenthesis);
 
-				let exp = self.e();
+				let lhs = self.primary();
+				let exp = self.parse_expression(lhs, 0);
 
 				self.eat(TokenKind::RParenthesis);
 
 				return exp;
 			},
 			_ => {
-				panic!("F : no valid token kind");
+				panic!("No valid primary token kind");
 			}
 		}
 	}
 
-	fn j(&mut self, previous : Node) -> Option<Node> {
-		match self.current_token.kind {
-			TokenKind::Equal => {
-				self.eat(TokenKind::Equal);
+	fn parse_expression(&mut self, mut lhs: Node, precedence: i32) -> Node {
+		while Self::is_op(&self.current_token.kind) && Self::get_precedence(&self.current_token.kind) >= precedence {
+			let op = self.current_token.clone();
+			self.advance();
 
-				Some(Node::BinaryOp { 
-					op: Operator::Equal, 
-					left: Box::new(previous), 
-					right: Box::new(self.e())
-				})
-			},
-			TokenKind::NotEqual => {
-				self.eat(TokenKind::NotEqual);
+			let mut rhs = self.primary();
+			while Self::is_op(&self.current_token.kind) && Self::get_precedence(&self.current_token.kind) > Self::get_precedence(&op.kind) {
+				rhs = self.parse_expression(rhs, Self::get_precedence(&op.kind) + 1);
+			}
 
-				Some(Node::BinaryOp { 
-					op: Operator::NotEqual, 
-					left: Box::new(previous), 
-					right: Box::new(self.e())
-				})
-			},
-			TokenKind::LowerOrEq => {
-				self.eat(TokenKind::LowerOrEq);
-
-				Some(Node::BinaryOp { 
-					op: Operator::LowerOrEq, 
-					left: Box::new(previous), 
-					right: Box::new(self.e())
-				})
-			},
-			TokenKind::GreaterOrEq => {
-				self.eat(TokenKind::GreaterOrEq);
-
-				Some(Node::BinaryOp { 
-					op: Operator::GreaterOrEq, 
-					left: Box::new(previous), 
-					right: Box::new(self.e())
-				})
-			},
-			TokenKind::Greater => {
-				self.eat(TokenKind::Greater);
-
-				Some(Node::BinaryOp { 
-					op: Operator::Greater, 
-					left: Box::new(previous), 
-					right: Box::new(self.e())
-				})
-			},
-			TokenKind::Lower => {
-				self.eat(TokenKind::Lower);
-
-				Some(Node::BinaryOp { 
-					op: Operator::Lower, 
-					left: Box::new(previous), 
-					right: Box::new(self.e())
-				})
-			},
-			_ => None
-		}
-	}
-
-	fn h(&mut self) -> Node {
-		let left = self.f();
-
-		match self.d(left.clone()) {
-			Some(x) => x,
-			None => left
-		}
-	}
-
-	fn t(&mut self) -> Node {
-		let left = self.h();
-		
-		match self.g(left.clone()) {
-			Some(x) => x,
-			None => left
-		}
-	}
-
-	fn g(&mut self, previous : Node) -> Option<Node> {
-		if self.expect(TokenKind::Product) {
-			self.eat(TokenKind::Product);
-
-			return Some(Node::BinaryOp { 
-				op: Operator::Product, 
-				left: Box::new(previous), 
-				right: Box::new(self.e()) 
-			});
-		}
-		else if self.expect(TokenKind::Divide) {
-			self.eat(TokenKind::Divide);
-
-			return Some(Node::BinaryOp { 
-				op: Operator::Divide, 
-				left: Box::new(previous), 
-				right: Box::new(self.e()) 
-			});
-		}
-		else if self.expect(TokenKind::LogicalAnd) {
-			self.eat(TokenKind::LogicalAnd);
-
-			return Some(Node::BinaryOp { 
-				op: Operator::LogicalAnd, 
-				left: Box::new(previous), 
-				right: Box::new(self.e()) 
-			});
+			lhs = Node::BinaryOp { 
+				op: Self::to_op(&op.kind),
+				left: Box::new(lhs), 
+				right: Box::new(rhs)
+			};
 		}
 
-		return None;
-	}
-
-	fn d(&mut self, previous : Node) -> Option<Node> {
-		if self.expect(TokenKind::Add) {
-			self.eat(TokenKind::Add);
-
-			return Some(Node::BinaryOp { 
-				op: Operator::Add, 
-				left: Box::new(previous), 
-				right: Box::new(self.e()) 
-			});
-		}
-		else if self.expect(TokenKind::Minus) {
-			self.eat(TokenKind::Minus);
-
-			return Some(Node::BinaryOp { 
-				op: Operator::Minus, 
-				left: Box::new(previous), 
-				right: Box::new(self.e()) 
-			});
-
-		}
-		else if self.expect(TokenKind::LogicalOr) {
-			self.eat(TokenKind::LogicalOr);
-
-			return Some(Node::BinaryOp { 
-				op: Operator::LogicalOr,
-				left: Box::new(previous), 
-				right: Box::new(self.e()) 
-			});
-		}
-
-		return None;
-	}
-
-	fn e(&mut self) -> Node {
-		let left = self.t();
-		
-		match self.j(left.clone()) {
-			Some(x) => x,
-			None => left
-		}
+		lhs
 	}
 
 	fn instr(&mut self) -> Node {
@@ -297,7 +212,8 @@ impl Parser<'_> {
 				self.eat(TokenKind::Identifier);
 				self.eat(TokenKind::Assign);
 
-				let value = self.e();
+				let lhs = self.primary();
+				let value = self.parse_expression(lhs, 0);
 
 				self.eat(TokenKind::Semilicon);
 
@@ -312,7 +228,8 @@ impl Parser<'_> {
 
 				self.eat(TokenKind::Assign);
 
-				let value = self.e();
+				let lhs = self.primary();
+				let value = self.parse_expression(lhs, 0);
 
 				self.eat(TokenKind::Semilicon);
 

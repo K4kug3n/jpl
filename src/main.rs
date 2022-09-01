@@ -8,6 +8,7 @@ fn main() {
 		let test = 32.5;
 		Test = 2;
 		let bool_test = true && false || true;
+		let condition = (2 == 2) || (3.5 != 3.6);
 	";
 	
 	let mut lexer = lexer::Lexer::new(program);

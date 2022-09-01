@@ -27,7 +27,7 @@ impl Word {
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
 	Add,
 	Minus,
@@ -53,7 +53,7 @@ pub enum TokenKind {
 	Eof
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
 	pub kind: TokenKind,
 	pub value: String,
