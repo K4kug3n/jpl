@@ -35,13 +35,19 @@ pub enum TokenKind {
 	Divide,
 	LogicalAnd,
 	LogicalOr,
+	Equal,
+	NotEqual,
+	GreaterOrEq,
+	LowerOrEq,
+	Greater,
+	Lower,
 	Integer,
 	Float,
 	Bool,
 	Identifier,
 	LParenthesis,
 	RParenthesis,
-	Equal,
+	Assign,
 	Let,
 	Semilicon,
 	Eof
@@ -74,7 +80,8 @@ pub struct Lexer<'a> {
 
 impl Lexer<'_> {
 	// TODO: Change this to static hashmap
-	const RESERVED_KEYWORDS : [&'static str; 13] = ["+", "-", "*", "/", "(", ")", "=", ";", "&&", "||", "let", "true", "false"];
+	const RESERVED_KEYWORDS : [&'static str; 19] = 
+	["+", "-", "*", "/", "(", ")", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "let", "true", "false"];
 
 	pub fn new(program: &str) -> Lexer {
 		let mut new_lexer = Lexer {
@@ -173,11 +180,17 @@ impl Lexer<'_> {
 			"||" => TokenKind::LogicalOr,
 			"(" => TokenKind::LParenthesis,
 			")" => TokenKind::RParenthesis,
-			"=" => TokenKind::Equal,
+			"=" => TokenKind::Assign,
 			";" => TokenKind::Semilicon,
 			"let" => TokenKind::Let,
 			"true" => TokenKind::Bool,
 			"false" => TokenKind::Bool,
+			"==" => TokenKind::Equal,
+			"!=" => TokenKind::NotEqual,
+			">=" => TokenKind::GreaterOrEq,
+			"<=" => TokenKind::LowerOrEq,
+			">" => TokenKind::Greater,
+			"<" => TokenKind::Lower,
 			_ => panic!("Unknow token")
 		}
 	}
@@ -232,6 +245,12 @@ mod tests {
 		expect_token_kind("/", TokenKind::Divide);
 		expect_token_kind("&&", TokenKind::LogicalAnd);
 		expect_token_kind("||", TokenKind::LogicalOr);
+		expect_token_kind(">=", TokenKind::GreaterOrEq);
+		expect_token_kind("<=", TokenKind::LowerOrEq);
+		expect_token_kind("==", TokenKind::Equal);
+		expect_token_kind("!=", TokenKind::NotEqual);
+		expect_token_kind(">", TokenKind::Greater);
+		expect_token_kind("<", TokenKind::Lower);
 	}
 
 	#[test]
@@ -265,8 +284,8 @@ mod tests {
 	}
 
 	#[test]
-	fn equal_token() {
-		expect_token_kind("=", TokenKind::Equal);
+	fn assign_token() {
+		expect_token_kind("=", TokenKind::Assign);
 	}
 
 	#[test]
@@ -296,7 +315,7 @@ mod tests {
 
 		assert_eq!(lexer.next_token().kind, TokenKind::Let);
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
-		assert_eq!(lexer.next_token().kind, TokenKind::Equal);
+		assert_eq!(lexer.next_token().kind, TokenKind::Assign);
 		assert_eq!(lexer.next_token().kind, TokenKind::LParenthesis);
 		assert_eq!(lexer.next_token().kind, TokenKind::Float);
 		assert_eq!(lexer.next_token().kind, TokenKind::Product);
@@ -313,12 +332,29 @@ mod tests {
 
 		assert_eq!(lexer.next_token().kind, TokenKind::Let);
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
-		assert_eq!(lexer.next_token().kind, TokenKind::Equal);
+		assert_eq!(lexer.next_token().kind, TokenKind::Assign);
 		assert_eq!(lexer.next_token().kind, TokenKind::Bool);
 		assert_eq!(lexer.next_token().kind, TokenKind::LogicalAnd);
 		assert_eq!(lexer.next_token().kind, TokenKind::Bool);
 		assert_eq!(lexer.next_token().kind, TokenKind::LogicalOr);
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::Semilicon);
+	}
+
+	#[test]
+	fn condition_expression_lexing() {
+		let mut lexer = Lexer::new("let test=2.3==identifier&&3>=4;");
+
+		assert_eq!(lexer.next_token().kind, TokenKind::Let);
+		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::Assign);
+		assert_eq!(lexer.next_token().kind, TokenKind::Float);
+		assert_eq!(lexer.next_token().kind, TokenKind::Equal);
+		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::LogicalAnd);
+		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
+		assert_eq!(lexer.next_token().kind, TokenKind::GreaterOrEq);
+		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
 		assert_eq!(lexer.next_token().kind, TokenKind::Semilicon);
 	}
 

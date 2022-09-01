@@ -3,7 +3,7 @@ use core::panic;
 use crate::lexer::{Lexer, Token, TokenKind};
 use crate::visitor::{Visitable, Visitor};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operator {
 	Add,
 	Minus,
@@ -11,9 +11,15 @@ pub enum Operator {
 	Divide,
 	LogicalAnd,
 	LogicalOr,
+	Equal,
+	NotEqual,
+	LowerOrEq,
+	GreaterOrEq,
+	Lower,
+	Greater
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Node {
 	Int(i64),
 	Float(f64),
@@ -84,15 +90,6 @@ impl Parser<'_> {
 		self.current_token.kind == kind
 	}
 
-	fn t(&mut self) -> Node {
-		let left = self.f();
-		
-		match self.g(left.clone()) {
-			Some(x) => x,
-			None => left
-		}
-	}
-
 	fn f(&mut self) -> Node {
 		match self.current_token.kind {
 			TokenKind::Integer => {
@@ -138,12 +135,90 @@ impl Parser<'_> {
 		}
 	}
 
+	fn j(&mut self, previous : Node) -> Option<Node> {
+		match self.current_token.kind {
+			TokenKind::Equal => {
+				self.eat(TokenKind::Equal);
+
+				Some(Node::BinaryOp { 
+					op: Operator::Equal, 
+					left: Box::new(previous), 
+					right: Box::new(self.e())
+				})
+			},
+			TokenKind::NotEqual => {
+				self.eat(TokenKind::NotEqual);
+
+				Some(Node::BinaryOp { 
+					op: Operator::NotEqual, 
+					left: Box::new(previous), 
+					right: Box::new(self.e())
+				})
+			},
+			TokenKind::LowerOrEq => {
+				self.eat(TokenKind::LowerOrEq);
+
+				Some(Node::BinaryOp { 
+					op: Operator::LowerOrEq, 
+					left: Box::new(previous), 
+					right: Box::new(self.e())
+				})
+			},
+			TokenKind::GreaterOrEq => {
+				self.eat(TokenKind::GreaterOrEq);
+
+				Some(Node::BinaryOp { 
+					op: Operator::GreaterOrEq, 
+					left: Box::new(previous), 
+					right: Box::new(self.e())
+				})
+			},
+			TokenKind::Greater => {
+				self.eat(TokenKind::Greater);
+
+				Some(Node::BinaryOp { 
+					op: Operator::Greater, 
+					left: Box::new(previous), 
+					right: Box::new(self.e())
+				})
+			},
+			TokenKind::Lower => {
+				self.eat(TokenKind::Lower);
+
+				Some(Node::BinaryOp { 
+					op: Operator::Lower, 
+					left: Box::new(previous), 
+					right: Box::new(self.e())
+				})
+			},
+			_ => None
+		}
+	}
+
+	fn h(&mut self) -> Node {
+		let left = self.f();
+
+		match self.d(left.clone()) {
+			Some(x) => x,
+			None => left
+		}
+	}
+
+	fn t(&mut self) -> Node {
+		let left = self.h();
+		
+		match self.g(left.clone()) {
+			Some(x) => x,
+			None => left
+		}
+	}
+
 	fn g(&mut self, previous : Node) -> Option<Node> {
 		if self.expect(TokenKind::Product) {
 			self.eat(TokenKind::Product);
 
 			return Some(Node::BinaryOp { 
-				op:Operator::Product, 
+				op: Operator::Product, 
 				left: Box::new(previous), 
 				right: Box::new(self.e()) 
 			});
@@ -206,7 +281,7 @@ impl Parser<'_> {
 	fn e(&mut self) -> Node {
 		let left = self.t();
 		
-		match self.d(left.clone()) {
+		match self.j(left.clone()) {
 			Some(x) => x,
 			None => left
 		}
@@ -220,7 +295,7 @@ impl Parser<'_> {
 				let name = self.current_token.value.clone();
 
 				self.eat(TokenKind::Identifier);
-				self.eat(TokenKind::Equal);
+				self.eat(TokenKind::Assign);
 
 				let value = self.e();
 
@@ -235,7 +310,7 @@ impl Parser<'_> {
 				let name = self.current_token.value.clone();
 				self.eat(TokenKind::Identifier);
 
-				self.eat(TokenKind::Equal);
+				self.eat(TokenKind::Assign);
 
 				let value = self.e();
 
@@ -267,5 +342,84 @@ impl Parser<'_> {
 
 	pub fn ast(&mut self) -> Option<Node> {
 		return self.prgm();
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	
+	#[test]	
+	fn condition_parsing(){
+		let mut lexer = Lexer::new("let condition = 2 == 2 || 3.5 != 3.6;");
+
+		let mut parser = Parser::new(&mut lexer);
+
+		let ast = parser.ast();
+
+		assert_eq!(ast,Some(
+			Node::InstructionList {
+				current: Box::new(Node::VarDeclaration { 
+					name: String::from("condition"),
+					value: Box::new(
+						Node::BinaryOp { 
+							op: Operator::LogicalOr,
+							left: Box::new(
+								Node::BinaryOp { 
+									op: Operator::Equal, 
+									left: Box::new(Node::Int(2)), 
+									right: Box::new(Node::Int(2)) 
+								}
+							),
+							right: Box::new(
+								Node::BinaryOp { 
+									op: Operator::NotEqual, 
+									left: Box::new(Node::Float(3.5)), 
+									right: Box::new(Node::Float(3.6))
+								}
+							) 
+						}
+					)
+				}),
+				next: Box::new(None)
+			}
+		));
+	}
+
+	#[test]	
+	fn math_exp_parsing(){
+		let mut lexer = Lexer::new("let math = 1 * 3 + 4 * 2;");
+
+		let mut parser = Parser::new(&mut lexer);
+
+		let ast = parser.ast();
+
+		assert_eq!(ast,Some(
+			Node::InstructionList {
+				current: Box::new(Node::VarDeclaration { 
+					name: String::from("math"),
+					value: Box::new(
+						Node::BinaryOp { 
+							op: Operator::Add,
+							left: Box::new(
+								Node::BinaryOp { 
+									op: Operator::Product, 
+									left: Box::new(Node::Int(1)), 
+									right: Box::new(Node::Int(3)) 
+								}
+							),
+							right: Box::new(
+								Node::BinaryOp { 
+									op: Operator::Product, 
+									left: Box::new(Node::Int(4)), 
+									right: Box::new(Node::Int(2))
+								}
+							) 
+						}
+					)
+				}),
+				next: Box::new(None)
+			}
+		));
 	}
 }

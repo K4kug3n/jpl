@@ -26,16 +26,30 @@ LIST_INSTR &rarr; ε
 INSTR &rarr; let *id* = E;  
 INSTR &rarr; *id* = E;  
 
-E &rarr; T D  
-D &rarr; + E  
-D &rarr; - E  
-D &rarr; || E  
-D &rarr; ε  
-T &rarr; F G  
+E &rarr; T J  
+
+J &rarr; != E  
+J &rarr; == E  
+J &rarr; >= E  
+J &rarr; <= E 
+J &rarr; > E  
+J &rarr; < E  
+J &rarr; ε  
+
+T &rarr; H G  
+
 G &rarr; * E  
 G &rarr; / E  
 G &rarr; && E  
 G &rarr; ε  
+
+H &rarr; F D  
+
+D &rarr; + E  
+D &rarr; - E  
+D &rarr; || E  
+D &rarr; ε  
+
 F &rarr; ( E )  
 F &rarr; *id*  
 F &rarr; *nb*  

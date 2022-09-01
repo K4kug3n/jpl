@@ -30,30 +30,92 @@ impl InterpretorVisitor {
 		println!("{:?}", self.memory);
 	}
 
-	fn apply_op_float(op: &Operator, lhs: f64, rhs: f64) -> f64 {
+	fn apply_op_float(&mut self, op: &Operator, lhs: f64, rhs: f64) {
 		match op {
-			Operator::Add => lhs + rhs,
-			Operator::Minus => lhs - rhs,
-			Operator::Product => lhs * rhs,
-			Operator::Divide => lhs / rhs,
+			Operator::Add => { 
+				self.result = ExpressionResult::Float(lhs + rhs);
+			},
+			Operator::Minus => {
+				self.result = ExpressionResult::Float(lhs - rhs);
+			},
+			Operator::Product => { 
+				self.result = ExpressionResult::Float(lhs * rhs);
+			},
+			Operator::Divide => {
+				self.result = ExpressionResult::Float(lhs / rhs);
+			},
+			Operator::LowerOrEq => {
+				self.result = ExpressionResult::Bool(lhs <= rhs);
+			},
+			Operator::GreaterOrEq => {
+				self.result = ExpressionResult::Bool(lhs >= rhs);
+			},
+			Operator::Equal => {
+				self.result = ExpressionResult::Bool(lhs == rhs);
+			},
+			Operator::NotEqual => {
+				self.result = ExpressionResult::Bool(lhs != rhs);
+			},
+			Operator::Lower => {
+				self.result = ExpressionResult::Bool(lhs < rhs);
+			},
+			Operator::Greater => {
+				self.result = ExpressionResult::Bool(lhs > rhs);
+			},
 			_ => panic!("Wrong type")
 		}
 	}
 
-	fn apply_op_int(op: &Operator, lhs: i64, rhs: i64) -> i64 {
+	fn apply_op_int(&mut self, op: &Operator, lhs: i64, rhs: i64) {
 		match op {
-			Operator::Add => lhs + rhs,
-			Operator::Minus => lhs - rhs,
-			Operator::Product => lhs * rhs,
-			Operator::Divide => lhs / rhs,
+			Operator::Add => { 
+				self.result = ExpressionResult::Int(lhs + rhs);
+			},
+			Operator::Minus => {
+				self.result = ExpressionResult::Int(lhs - rhs);
+			},
+			Operator::Product => { 
+				self.result = ExpressionResult::Int(lhs * rhs);
+			},
+			Operator::Divide => {
+				self.result = ExpressionResult::Int(lhs / rhs);
+			},
+			Operator::LowerOrEq => {
+				self.result = ExpressionResult::Bool(lhs <= rhs);
+			},
+			Operator::GreaterOrEq => {
+				self.result = ExpressionResult::Bool(lhs >= rhs);
+			},
+			Operator::Equal => {
+				self.result = ExpressionResult::Bool(lhs == rhs);
+			},
+			Operator::NotEqual => {
+				self.result = ExpressionResult::Bool(lhs != rhs);
+			},
+			Operator::Lower => {
+				self.result = ExpressionResult::Bool(lhs < rhs);
+			},
+			Operator::Greater => {
+				self.result = ExpressionResult::Bool(lhs > rhs);
+			},
 			_ => panic!("Wrong type")
 		}
 	}
 
-	fn apply_op_bool(op: &Operator, lhs: bool, rhs: bool) -> bool {
+	fn apply_op_bool(&mut self, op: &Operator, lhs: bool, rhs: bool) {
 		match op {
-			Operator::LogicalAnd => lhs && rhs,
-			Operator::LogicalOr => lhs || rhs,
+			Operator::LogicalAnd => { 
+				self.result = ExpressionResult::Bool(lhs && rhs);
+			},
+			Operator::LogicalOr => {
+				self.result = ExpressionResult::Bool(lhs || rhs);
+			},
+			Operator::Equal => { 
+				self.result = ExpressionResult::Bool(lhs == rhs);
+			},
+			Operator::NotEqual => {
+				self.result = ExpressionResult::Bool(lhs != rhs);
+			},
 			_ => panic!("Wrong type")
 		}
 	}
@@ -90,7 +152,7 @@ impl Visitor for InterpretorVisitor {
 		match left_result {
 			ExpressionResult::Int(lhs) => {
 				if let ExpressionResult::Int(rhs) = right_result {
-					self.result = ExpressionResult::Int(InterpretorVisitor::apply_op_int(op, lhs, rhs));
+					self.apply_op_int(op, lhs, rhs);
 				}
 				else {
 					panic!("Wrong type") // TODO: Type checking
@@ -98,7 +160,7 @@ impl Visitor for InterpretorVisitor {
 			},
 			ExpressionResult::Float(lhs) => {
 				if let ExpressionResult::Float(rhs) = right_result {
-					self.result = ExpressionResult::Float(InterpretorVisitor::apply_op_float(op, lhs, rhs));
+					self.apply_op_float(op, lhs, rhs);
 				}
 				else {
 					panic!("Wrong type") // TODO: Type checking
@@ -106,7 +168,7 @@ impl Visitor for InterpretorVisitor {
 			},
 			ExpressionResult::Bool(lhs) => {
 				if let ExpressionResult::Bool(rhs) = right_result {
-					self.result = ExpressionResult::Bool(InterpretorVisitor::apply_op_bool(op, lhs, rhs));
+					self.apply_op_bool(op, lhs, rhs);
 				}
 				else {
 					panic!("Wrong type") // TODO: Type checking
