@@ -1,4 +1,5 @@
 use crate::text_iterator::{TextIterator, Symbol};
+use crate::operator::{Operator};
 
 #[derive(PartialEq)]
 struct Word {
@@ -29,18 +30,7 @@ impl Word {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
-	Add,
-	Minus,
-	Product,
-	Divide,
-	LogicalAnd,
-	LogicalOr,
-	Equal,
-	NotEqual,
-	GreaterOrEq,
-	LowerOrEq,
-	Greater,
-	Lower,
+	Operator(Operator),
 	Integer,
 	Float,
 	Bool,
@@ -172,12 +162,12 @@ impl Lexer<'_> {
 
 	fn get_kind(value: &str) -> TokenKind {
 		match value {
-			"+" => TokenKind::Add,
-			"-" => TokenKind::Minus,
-			"*" => TokenKind::Product,
-			"/" => TokenKind::Divide,
-			"&&" => TokenKind::LogicalAnd,
-			"||" => TokenKind::LogicalOr,
+			"+" => TokenKind::Operator(Operator::Add),
+			"-" => TokenKind::Operator(Operator::Minus),
+			"*" => TokenKind::Operator(Operator::Product),
+			"/" => TokenKind::Operator(Operator::Divide),
+			"&&" => TokenKind::Operator(Operator::LogicalAnd),
+			"||" => TokenKind::Operator(Operator::LogicalOr),
 			"(" => TokenKind::LParenthesis,
 			")" => TokenKind::RParenthesis,
 			"=" => TokenKind::Assign,
@@ -185,12 +175,12 @@ impl Lexer<'_> {
 			"let" => TokenKind::Let,
 			"true" => TokenKind::Bool,
 			"false" => TokenKind::Bool,
-			"==" => TokenKind::Equal,
-			"!=" => TokenKind::NotEqual,
-			">=" => TokenKind::GreaterOrEq,
-			"<=" => TokenKind::LowerOrEq,
-			">" => TokenKind::Greater,
-			"<" => TokenKind::Lower,
+			"==" => TokenKind::Operator(Operator::Equal),
+			"!=" => TokenKind::Operator(Operator::NotEqual),
+			">=" => TokenKind::Operator(Operator::GreaterOrEq),
+			"<=" => TokenKind::Operator(Operator::LowerOrEq),
+			">" => TokenKind::Operator(Operator::Greater),
+			"<" => TokenKind::Operator(Operator::Lower),
 			_ => panic!("Unknow token")
 		}
 	}
@@ -239,18 +229,18 @@ mod tests {
 
 	#[test]
 	fn op_token() {
-		expect_token_kind("+", TokenKind::Add);
-		expect_token_kind("-", TokenKind::Minus);
-		expect_token_kind("*", TokenKind::Product);
-		expect_token_kind("/", TokenKind::Divide);
-		expect_token_kind("&&", TokenKind::LogicalAnd);
-		expect_token_kind("||", TokenKind::LogicalOr);
-		expect_token_kind(">=", TokenKind::GreaterOrEq);
-		expect_token_kind("<=", TokenKind::LowerOrEq);
-		expect_token_kind("==", TokenKind::Equal);
-		expect_token_kind("!=", TokenKind::NotEqual);
-		expect_token_kind(">", TokenKind::Greater);
-		expect_token_kind("<", TokenKind::Lower);
+		expect_token_kind("+", TokenKind::Operator(Operator::Add));
+		expect_token_kind("-", TokenKind::Operator(Operator::Minus));
+		expect_token_kind("*", TokenKind::Operator(Operator::Product));
+		expect_token_kind("/", TokenKind::Operator(Operator::Divide));
+		expect_token_kind("&&", TokenKind::Operator(Operator::LogicalAnd));
+		expect_token_kind("||", TokenKind::Operator(Operator::LogicalOr));
+		expect_token_kind(">=", TokenKind::Operator(Operator::GreaterOrEq));
+		expect_token_kind("<=", TokenKind::Operator(Operator::LowerOrEq));
+		expect_token_kind("==", TokenKind::Operator(Operator::Equal));
+		expect_token_kind("!=", TokenKind::Operator(Operator::NotEqual));
+		expect_token_kind(">", TokenKind::Operator(Operator::Greater));
+		expect_token_kind("<", TokenKind::Operator(Operator::Lower));
 	}
 
 	#[test]
@@ -318,10 +308,10 @@ mod tests {
 		assert_eq!(lexer.next_token().kind, TokenKind::Assign);
 		assert_eq!(lexer.next_token().kind, TokenKind::LParenthesis);
 		assert_eq!(lexer.next_token().kind, TokenKind::Float);
-		assert_eq!(lexer.next_token().kind, TokenKind::Product);
+		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::Product));
 		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
 		assert_eq!(lexer.next_token().kind, TokenKind::RParenthesis);
-		assert_eq!(lexer.next_token().kind, TokenKind::Add);
+		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::Add));
 		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
 		assert_eq!(lexer.next_token().kind, TokenKind::Semilicon);
 	}
@@ -334,9 +324,9 @@ mod tests {
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
 		assert_eq!(lexer.next_token().kind, TokenKind::Assign);
 		assert_eq!(lexer.next_token().kind, TokenKind::Bool);
-		assert_eq!(lexer.next_token().kind, TokenKind::LogicalAnd);
+		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::LogicalAnd));
 		assert_eq!(lexer.next_token().kind, TokenKind::Bool);
-		assert_eq!(lexer.next_token().kind, TokenKind::LogicalOr);
+		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::LogicalOr));
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
 		assert_eq!(lexer.next_token().kind, TokenKind::Semilicon);
 	}
@@ -349,11 +339,11 @@ mod tests {
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
 		assert_eq!(lexer.next_token().kind, TokenKind::Assign);
 		assert_eq!(lexer.next_token().kind, TokenKind::Float);
-		assert_eq!(lexer.next_token().kind, TokenKind::Equal);
+		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::Equal));
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
-		assert_eq!(lexer.next_token().kind, TokenKind::LogicalAnd);
+		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::LogicalAnd));
 		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
-		assert_eq!(lexer.next_token().kind, TokenKind::GreaterOrEq);
+		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::GreaterOrEq));
 		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
 		assert_eq!(lexer.next_token().kind, TokenKind::Semilicon);
 	}

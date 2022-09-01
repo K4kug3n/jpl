@@ -1,23 +1,8 @@
 use core::panic;
 
+use crate::operator::{Operator};
 use crate::lexer::{Lexer, Token, TokenKind};
 use crate::visitor::{Visitable, Visitor};
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Operator {
-	Add,
-	Minus,
-	Product,
-	Divide,
-	LogicalAnd,
-	LogicalOr,
-	Equal,
-	NotEqual,
-	LowerOrEq,
-	GreaterOrEq,
-	Lower,
-	Greater
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
@@ -75,48 +60,6 @@ impl Parser<'_> {
 		Parser {
 			lexer: lexer,
 			current_token: next_token
-		}
-	}
-
-	fn get_precedence(kind: &TokenKind) -> i32 {
-		match kind {
-			TokenKind::LogicalAnd => 0,
-			TokenKind::LogicalOr => 0,
-			TokenKind::LowerOrEq => 1,
-			TokenKind::GreaterOrEq => 1,
-			TokenKind::Lower => 1,
-			TokenKind::Greater => 1,
-			TokenKind::Equal => 1,
-			TokenKind::NotEqual => 1,
-			TokenKind::Add => 2,
-			TokenKind::Minus => 2,
-			TokenKind::Product => 3,
-			TokenKind::Divide => 3,
-			_ => panic!("Not a op")
-		}
-	}
-
-	fn is_op(kind: &TokenKind) -> bool {
-		*kind == TokenKind::Add || *kind == TokenKind::Minus || *kind == TokenKind::Product || *kind == TokenKind::Divide ||
-		*kind == TokenKind::LowerOrEq || *kind == TokenKind::GreaterOrEq || *kind == TokenKind::Lower || *kind == TokenKind::Greater ||
-		*kind == TokenKind::Equal || *kind == TokenKind::NotEqual || *kind == TokenKind::LogicalAnd || *kind == TokenKind::LogicalOr
-	}
-
-	fn to_op(kind: &TokenKind) -> Operator {
-		match kind {
-			TokenKind::LogicalAnd => Operator::LogicalAnd,
-			TokenKind::LogicalOr => Operator::LogicalOr,
-			TokenKind::LowerOrEq => Operator::LowerOrEq,
-			TokenKind::GreaterOrEq => Operator::GreaterOrEq,
-			TokenKind::Lower => Operator::Lower,
-			TokenKind::Greater => Operator::Greater,
-			TokenKind::Equal => Operator::Equal,
-			TokenKind::NotEqual => Operator::NotEqual,
-			TokenKind::Add => Operator::Add,
-			TokenKind::Minus => Operator::Minus,
-			TokenKind::Product => Operator::Product,
-			TokenKind::Divide => Operator::Divide,
-			_ => panic!("Not a op")
 		}
 	}
 
@@ -182,18 +125,26 @@ impl Parser<'_> {
 		}
 	}
 
-	fn parse_expression(&mut self, mut lhs: Node, precedence: i32) -> Node {
-		while Self::is_op(&self.current_token.kind) && Self::get_precedence(&self.current_token.kind) >= precedence {
-			let op = self.current_token.clone();
+	fn parse_expression(&mut self, mut lhs: Node, precedence: i16) -> Node {
+		
+		while let TokenKind::Operator(op) = self.current_token.kind {
+			if op.precedence() < precedence {
+				break;
+			}
 			self.advance();
 
 			let mut rhs = self.primary();
-			while Self::is_op(&self.current_token.kind) && Self::get_precedence(&self.current_token.kind) > Self::get_precedence(&op.kind) {
-				rhs = self.parse_expression(rhs, Self::get_precedence(&op.kind) + 1);
+			while let TokenKind::Operator(lookahead) = self.current_token.kind {
+				if lookahead.precedence() > op.precedence() {
+					rhs = self.parse_expression(rhs, op.precedence() + 1);
+				}
+				else {
+					break;
+				}
 			}
 
 			lhs = Node::BinaryOp { 
-				op: Self::to_op(&op.kind),
+				op: op,
 				left: Box::new(lhs), 
 				right: Box::new(rhs)
 			};

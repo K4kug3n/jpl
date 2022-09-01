@@ -1,4 +1,5 @@
-use crate::parser::{Node, Operator};
+use crate::parser::{Node};
+use crate::operator::{Operator};
 
 pub trait Visitor {
 	fn visit_int(&mut self, value: i64);

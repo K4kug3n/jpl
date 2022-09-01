@@ -1,6 +1,7 @@
 pub mod lexer;
 pub mod parser;
 pub mod interpretor;
-pub mod visitor;
 
+mod visitor;
+mod operator;
 mod text_iterator;

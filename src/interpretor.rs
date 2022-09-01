@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use crate::parser::{Node, Operator};
+use crate::operator::{Operator};
+use crate::parser::{Node};
 use crate::visitor::{Visitor, Visitable};
 
 #[derive(Clone, Copy, Debug)]
