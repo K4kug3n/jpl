@@ -19,38 +19,18 @@ JPL is a toy language to practice programming language creation, made in Rust as
 ## Current Grammar
 Inspired by Compilers & Interpreters course from University of Geneva  
 
-PGRM &rarr; LIST_INSTR  
+program ::= list_instr  
 
-LIST_INSTR &rarr; INSTR LIST_INSTR  
-LIST_INSTR &rarr; ε  
-INSTR &rarr; let *id* = E;  
-INSTR &rarr; *id* = E;  
+list-instr ::= [ instr list_instr ]
 
-E &rarr; T J  
+instr ::= [ "let" ] VARIABLE "=" expression;  
 
-J &rarr; != E  
-J &rarr; == E  
-J &rarr; >= E  
-J &rarr; <= E 
-J &rarr; > E  
-J &rarr; < E  
-J &rarr; ε  
+expression ::= equality-expression  
 
-T &rarr; H G  
+equality-expression ::= additive-expression [ ( '==' | '!=' | '<=' | '>=' | '<' | '>' ) additive-expression ] *  
 
-G &rarr; * E  
-G &rarr; / E  
-G &rarr; && E  
-G &rarr; ε  
+additive-expression ::= multiplicative-expression [ ( '+' | '-' | '||' ) multiplicative-expression ] *  
 
-H &rarr; F D  
+multiplicative-expression ::= primary [ ( '*' | '/' | '&&' ) primary ] *  
 
-D &rarr; + E  
-D &rarr; - E  
-D &rarr; || E  
-D &rarr; ε  
-
-F &rarr; ( E )  
-F &rarr; *id*  
-F &rarr; *nb*  
-F &rarr; *bool*  
+primary ::= '(' expression ')' | NUMBER | VARIABLE | BOOL  
