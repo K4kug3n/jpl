@@ -15,6 +15,10 @@ pub enum Node {
 		left: Box<Node>,
 		right: Box<Node>
 	},
+	UnaryOp {
+		op: Operator,
+		right: Box<Node>
+	},
 	VarDeclaration {
 		name: String,
 		value: Box<Node>
@@ -37,6 +41,7 @@ impl Visitable for Node {
 			Node::Identifier(name) => visitor.visit_identifier(name),
 			Node::Bool(value) => visitor.visit_bool(*value),
             Node::BinaryOp { op, left, right } => visitor.visit_binary_op(op, left, right),
+			Node::UnaryOp { op, right } => visitor.visit_unary_op(op, right),
 			Node::VarDeclaration { name, value } => visitor.visit_var_declaration(name, value),
 			Node::VarAssignation { name, value } => visitor.visit_var_assignation(name, value),
 			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next),
@@ -84,33 +89,33 @@ impl Parser<'_> {
 			TokenKind::Integer => {
 				let value = self.current_token.value.parse::<i64>().unwrap(); // TODO: Check it
 
-				self.eat(TokenKind::Integer);
+				self.advance();
 
 				return Node::Int(value);
 			},
 			TokenKind::Float => {
 				let value = self.current_token.value.parse::<f64>().unwrap(); // TODO: Check it
 
-				self.eat(TokenKind::Float);
+				self.advance();
 
 				return Node::Float(value);
 			},
 			TokenKind::Bool => {
 				let value = to_bool(&self.current_token.value);
 
-				self.eat(TokenKind::Bool);
+				self.advance();
 
 				return Node::Bool(value);
 			},
 			TokenKind::Identifier => {
 				let name = self.current_token.value.clone();
 
-				self.eat(TokenKind::Identifier);
+				self.advance();
 
 				return Node::Identifier(name);
 			},
 			TokenKind::LParenthesis => {
-				self.eat(TokenKind::LParenthesis);
+				self.advance();
 
 				let lhs = self.primary();
 				let exp = self.parse_expression(lhs, 0);
@@ -119,6 +124,19 @@ impl Parser<'_> {
 
 				return exp;
 			},
+			TokenKind::Operator(op) => {
+				if op == Operator::Not {
+					self.advance();
+
+					return Node::UnaryOp { 
+						op: Operator::Not,
+						right: Box::new(self.primary())
+					};
+				}
+				else {
+					panic!("No valid primary op");
+				}
+			}
 			_ => {
 				panic!("No valid primary token kind");
 			}

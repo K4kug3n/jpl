@@ -9,6 +9,7 @@ fn main() {
 		Test = 2;
 		let bool_test = true && false || true;
 		let condition = (2 == 2) || (3.5 != 3.6);
+		let unary_bool = !true;
 	";
 	
 	let mut lexer = lexer::Lexer::new(program);

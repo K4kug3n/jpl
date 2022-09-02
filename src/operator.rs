@@ -11,7 +11,8 @@ pub enum Operator {
 	LowerOrEq,
 	GreaterOrEq,
 	Lower,
-	Greater
+	Greater,
+	Not
 }
 
 impl Operator {
@@ -29,6 +30,7 @@ impl Operator {
 			Operator::Minus => 2,
 			Operator::Product => 3,
 			Operator::Divide => 3,
+			Operator::Not => 4
 		}
 	}
 }

@@ -1,3 +1,4 @@
+use core::panic;
 use std::collections::HashMap;
 
 use crate::operator::{Operator};
@@ -31,94 +32,61 @@ impl InterpretorVisitor {
 		println!("{:?}", self.memory);
 	}
 
-	fn apply_op_float(&mut self, op: &Operator, lhs: f64, rhs: f64) {
+	fn apply_binary_op_float(op: &Operator, lhs: f64, rhs: f64) -> ExpressionResult {
 		match op {
-			Operator::Add => { 
-				self.result = ExpressionResult::Float(lhs + rhs);
-			},
-			Operator::Minus => {
-				self.result = ExpressionResult::Float(lhs - rhs);
-			},
-			Operator::Product => { 
-				self.result = ExpressionResult::Float(lhs * rhs);
-			},
-			Operator::Divide => {
-				self.result = ExpressionResult::Float(lhs / rhs);
-			},
-			Operator::LowerOrEq => {
-				self.result = ExpressionResult::Bool(lhs <= rhs);
-			},
-			Operator::GreaterOrEq => {
-				self.result = ExpressionResult::Bool(lhs >= rhs);
-			},
-			Operator::Equal => {
-				self.result = ExpressionResult::Bool(lhs == rhs);
-			},
-			Operator::NotEqual => {
-				self.result = ExpressionResult::Bool(lhs != rhs);
-			},
-			Operator::Lower => {
-				self.result = ExpressionResult::Bool(lhs < rhs);
-			},
-			Operator::Greater => {
-				self.result = ExpressionResult::Bool(lhs > rhs);
-			},
-			_ => panic!("Wrong type")
+			Operator::Add => ExpressionResult::Float(lhs + rhs),
+			Operator::Minus => ExpressionResult::Float(lhs - rhs),
+			Operator::Product =>  ExpressionResult::Float(lhs * rhs),
+			Operator::Divide => ExpressionResult::Float(lhs / rhs),
+			Operator::LowerOrEq => ExpressionResult::Bool(lhs <= rhs),
+			Operator::GreaterOrEq => ExpressionResult::Bool(lhs >= rhs),
+			Operator::Equal => ExpressionResult::Bool(lhs == rhs),
+			Operator::NotEqual => ExpressionResult::Bool(lhs != rhs),
+			Operator::Lower => ExpressionResult::Bool(lhs < rhs),
+			Operator::Greater => ExpressionResult::Bool(lhs > rhs),
+			_ => panic!("Wrong op")
 		}
 	}
 
-	fn apply_op_int(&mut self, op: &Operator, lhs: i64, rhs: i64) {
+	fn apply_binary_op_int(op: &Operator, lhs: i64, rhs: i64) -> ExpressionResult {
 		match op {
-			Operator::Add => { 
-				self.result = ExpressionResult::Int(lhs + rhs);
-			},
-			Operator::Minus => {
-				self.result = ExpressionResult::Int(lhs - rhs);
-			},
-			Operator::Product => { 
-				self.result = ExpressionResult::Int(lhs * rhs);
-			},
-			Operator::Divide => {
-				self.result = ExpressionResult::Int(lhs / rhs);
-			},
-			Operator::LowerOrEq => {
-				self.result = ExpressionResult::Bool(lhs <= rhs);
-			},
-			Operator::GreaterOrEq => {
-				self.result = ExpressionResult::Bool(lhs >= rhs);
-			},
-			Operator::Equal => {
-				self.result = ExpressionResult::Bool(lhs == rhs);
-			},
-			Operator::NotEqual => {
-				self.result = ExpressionResult::Bool(lhs != rhs);
-			},
-			Operator::Lower => {
-				self.result = ExpressionResult::Bool(lhs < rhs);
-			},
-			Operator::Greater => {
-				self.result = ExpressionResult::Bool(lhs > rhs);
-			},
-			_ => panic!("Wrong type")
+			Operator::Add => ExpressionResult::Int(lhs + rhs),
+			Operator::Minus => ExpressionResult::Int(lhs - rhs),
+			Operator::Product => ExpressionResult::Int(lhs * rhs),
+			Operator::Divide => ExpressionResult::Int(lhs / rhs),
+			Operator::LowerOrEq => ExpressionResult::Bool(lhs <= rhs),
+			Operator::GreaterOrEq => ExpressionResult::Bool(lhs >= rhs),
+			Operator::Equal => ExpressionResult::Bool(lhs == rhs),
+			Operator::NotEqual => ExpressionResult::Bool(lhs != rhs),
+			Operator::Lower => ExpressionResult::Bool(lhs < rhs),
+			Operator::Greater => ExpressionResult::Bool(lhs > rhs),
+			_ => panic!("Wrong op")
 		}
 	}
 
-	fn apply_op_bool(&mut self, op: &Operator, lhs: bool, rhs: bool) {
+	fn apply_binary_op_bool(op: &Operator, lhs: bool, rhs: bool) -> ExpressionResult {
 		match op {
-			Operator::LogicalAnd => { 
-				self.result = ExpressionResult::Bool(lhs && rhs);
-			},
-			Operator::LogicalOr => {
-				self.result = ExpressionResult::Bool(lhs || rhs);
-			},
-			Operator::Equal => { 
-				self.result = ExpressionResult::Bool(lhs == rhs);
-			},
-			Operator::NotEqual => {
-				self.result = ExpressionResult::Bool(lhs != rhs);
-			},
-			_ => panic!("Wrong type")
+			Operator::LogicalAnd => ExpressionResult::Bool(lhs && rhs),
+			Operator::LogicalOr => ExpressionResult::Bool(lhs || rhs),
+			Operator::Equal => ExpressionResult::Bool(lhs == rhs),
+			Operator::NotEqual => ExpressionResult::Bool(lhs != rhs),
+			_ => panic!("Wrong op")
 		}
+	}
+
+	fn apply_unary_op_bool(op: &Operator, rhs: bool) -> ExpressionResult{
+		match op {
+			Operator::Not => ExpressionResult::Bool(!rhs),
+			_ => panic!("No valid opertaor for bool")
+		}
+	}
+
+	fn apply_unary_op_int(_: &Operator, _: i64) -> ExpressionResult {
+		panic!("No valid opertaor for int");
+	}
+
+	fn apply_unary_op_float(_: &Operator, _: f64) -> ExpressionResult {
+		panic!("No valid opertaor for float");
 	}
 }
 
@@ -153,7 +121,7 @@ impl Visitor for InterpretorVisitor {
 		match left_result {
 			ExpressionResult::Int(lhs) => {
 				if let ExpressionResult::Int(rhs) = right_result {
-					self.apply_op_int(op, lhs, rhs);
+					self.result = Self::apply_binary_op_int(op, lhs, rhs);
 				}
 				else {
 					panic!("Wrong type") // TODO: Type checking
@@ -161,7 +129,7 @@ impl Visitor for InterpretorVisitor {
 			},
 			ExpressionResult::Float(lhs) => {
 				if let ExpressionResult::Float(rhs) = right_result {
-					self.apply_op_float(op, lhs, rhs);
+					self.result = Self::apply_binary_op_float(op, lhs, rhs);
 				}
 				else {
 					panic!("Wrong type") // TODO: Type checking
@@ -169,11 +137,27 @@ impl Visitor for InterpretorVisitor {
 			},
 			ExpressionResult::Bool(lhs) => {
 				if let ExpressionResult::Bool(rhs) = right_result {
-					self.apply_op_bool(op, lhs, rhs);
+					self.result = Self::apply_binary_op_bool(op, lhs, rhs);
 				}
 				else {
 					panic!("Wrong type") // TODO: Type checking
 				}
+			}
+		}
+	}
+
+	fn visit_unary_op(&mut self, op: &Operator, right: &Node) {
+		right.accept(self);
+
+		match self.result {
+			ExpressionResult::Bool(rhs) => {
+				self.result = Self::apply_unary_op_bool(op, rhs);
+			},
+			ExpressionResult::Int(rhs) => {
+				self.result = Self::apply_unary_op_int(op, rhs);
+			},
+			ExpressionResult::Float(rhs) => {
+				self.result = Self::apply_unary_op_float(op, rhs);
 			}
 		}
 	}

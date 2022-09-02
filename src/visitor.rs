@@ -7,6 +7,7 @@ pub trait Visitor {
 	fn visit_identifier(&mut self, name: &String);
 	fn visit_bool(&mut self, value: bool);
 	fn visit_binary_op(&mut self, op: &Operator, left: &Node, right: &Node);
+	fn visit_unary_op(&mut self, op: &Operator, right: &Node);
 	fn visit_var_assignation(&mut self, name: &String, value: &Node);
 	fn visit_var_declaration(&mut self, name: &String, value: &Node);
 	fn visit_instruction_list(&mut self, current: &Node, next: &Option<Node>);

@@ -70,8 +70,8 @@ pub struct Lexer<'a> {
 
 impl Lexer<'_> {
 	// TODO: Change this to static hashmap
-	const RESERVED_KEYWORDS : [&'static str; 19] = 
-	["+", "-", "*", "/", "(", ")", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "let", "true", "false"];
+	const RESERVED_KEYWORDS : [&'static str; 20] = 
+	["+", "-", "*", "/", "(", ")", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "!", "let", "true", "false"];
 
 	pub fn new(program: &str) -> Lexer {
 		let mut new_lexer = Lexer {
@@ -181,6 +181,7 @@ impl Lexer<'_> {
 			"<=" => TokenKind::Operator(Operator::LowerOrEq),
 			">" => TokenKind::Operator(Operator::Greater),
 			"<" => TokenKind::Operator(Operator::Lower),
+			"!" => TokenKind::Operator(Operator::Not),
 			_ => panic!("Unknow token")
 		}
 	}
@@ -241,6 +242,7 @@ mod tests {
 		expect_token_kind("!=", TokenKind::Operator(Operator::NotEqual));
 		expect_token_kind(">", TokenKind::Operator(Operator::Greater));
 		expect_token_kind("<", TokenKind::Operator(Operator::Lower));
+		expect_token_kind("!", TokenKind::Operator(Operator::Not));
 	}
 
 	#[test]
