@@ -4,12 +4,13 @@ use jpl::parser;
 
 fn main() {
 	let program = "
-		let Test = (6 * 2) + (2 * 3) + 3;
+		let Test = (-6 * 2) + (2 * 3) + 3;
 		let test = 32.5;
 		Test = 2;
 		let bool_test = true && false || true;
 		let condition = (2 == 2) || (3.5 != 3.6);
 		let unary_bool = !true;
+		let negative = -1;
 	";
 	
 	let mut lexer = lexer::Lexer::new(program);

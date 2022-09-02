@@ -81,12 +81,18 @@ impl InterpretorVisitor {
 		}
 	}
 
-	fn apply_unary_op_int(_: &Operator, _: i64) -> ExpressionResult {
-		panic!("No valid opertaor for int");
+	fn apply_unary_op_int(op: &Operator, rhs: i64) -> ExpressionResult {
+		match op {
+			Operator::Minus => ExpressionResult::Int(-rhs),
+			_ => panic!("No valid opertaor for int")
+		}
 	}
 
-	fn apply_unary_op_float(_: &Operator, _: f64) -> ExpressionResult {
-		panic!("No valid opertaor for float");
+	fn apply_unary_op_float(op: &Operator, rhs: f64) -> ExpressionResult {
+		match op {
+			Operator::Minus => ExpressionResult::Float(-rhs),
+			_ => panic!("No valid opertaor for float")
+		}
 	}
 }
 

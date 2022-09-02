@@ -125,16 +125,24 @@ impl Parser<'_> {
 				return exp;
 			},
 			TokenKind::Operator(op) => {
-				if op == Operator::Not {
-					self.advance();
+				match op {
+					Operator::Not => {
+						self.advance();
 
-					return Node::UnaryOp { 
-						op: Operator::Not,
-						right: Box::new(self.primary())
-					};
-				}
-				else {
-					panic!("No valid primary op");
+						return Node::UnaryOp { 
+							op: Operator::Not,
+							right: Box::new(self.primary())
+						};
+					},
+					Operator::Minus => {
+						self.advance();
+
+						return Node::UnaryOp { 
+							op: Operator::Minus,
+							right: Box::new(self.primary())
+						};
+					}
+					_ => panic!("No valid primary op")
 				}
 			}
 			_ => {
@@ -274,7 +282,7 @@ mod tests {
 
 	#[test]	
 	fn math_exp_parsing(){
-		let mut lexer = Lexer::new("let math = 1 * 3 + 4 * 2;");
+		let mut lexer = Lexer::new("let math = -1 * 3 + 4 * 2;");
 
 		let mut parser = Parser::new(&mut lexer);
 
@@ -290,7 +298,10 @@ mod tests {
 							left: Box::new(
 								Node::BinaryOp { 
 									op: Operator::Product, 
-									left: Box::new(Node::Int(1)), 
+									left: Box::new(Node::UnaryOp {
+										op: Operator::Minus,
+										right: Box::new(Node::Int(1)) 
+									}), 
 									right: Box::new(Node::Int(3)) 
 								}
 							),
