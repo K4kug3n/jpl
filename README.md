@@ -33,4 +33,4 @@ additive-expression ::= multiplicative-expression [ ( '+' | '-' | '||' ) multipl
 
 multiplicative-expression ::= primary [ ( '*' | '/' | '&&' ) primary ] *  
 
-primary ::= '(' expression ')' | NUMBER | VARIABLE | BOOL  
+primary ::= '(' expression ')' | NUMBER | VARIABLE | BOOL | '!' primary | '-' primary
