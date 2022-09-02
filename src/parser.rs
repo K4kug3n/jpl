@@ -27,6 +27,10 @@ pub enum Node {
 		name: String,
 		value: Box<Node>
 	},
+	IfStatement {
+		condition: Box<Node>,
+		body: Box<Option<Node>>
+	},
 	InstructionList {
 		current: Box<Node>,
 		next: Box<Option<Node>>
@@ -44,6 +48,7 @@ impl Visitable for Node {
 			Node::UnaryOp { op, right } => visitor.visit_unary_op(op, right),
 			Node::VarDeclaration { name, value } => visitor.visit_var_declaration(name, value),
 			Node::VarAssignation { name, value } => visitor.visit_var_assignation(name, value),
+			Node::IfStatement { condition, body } => visitor.visit_if_statement(condition, body),
 			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next),
         }
     }
@@ -214,13 +219,30 @@ impl Parser<'_> {
 					name: name,
 					value: Box::new(value)
 				}
+			},
+			TokenKind::If => {
+				self.advance();
+
+				let lhs = self.primary();
+				let value = self.parse_expression(lhs, 0);
+
+				self.eat(TokenKind::LBracket);
+
+				let body = self.list_instr();
+
+				self.eat(TokenKind::RBracket);
+
+				Node::IfStatement { 
+					condition: Box::new(value), 
+					body: Box::new(body)
+				}
 			}
-			_ => { panic!("instr : no valid token kind"); }
+			_ => { panic!("instr : no valid token kind {:?}", self.current_token); }
 		}
 	}
 
 	fn list_instr(&mut self) -> Option<Node> {
-		if self.expect(TokenKind::Eof) {
+		if self.expect(TokenKind::Eof) || self.expect(TokenKind::RBracket) {
 			return None;
 		}
 
@@ -274,6 +296,41 @@ mod tests {
 							) 
 						}
 					)
+				}),
+				next: Box::new(None)
+			}
+		));
+	}
+
+	#[test]
+	fn if_statement_parsing(){
+		let mut lexer = Lexer::new("if condition == 2 { let test = 3; }");
+
+		let mut parser = Parser::new(&mut lexer);
+
+		let ast = parser.ast();
+
+		assert_eq!(ast,Some(
+			Node::InstructionList {
+				current: Box::new(Node::IfStatement { 
+					condition: Box::new(Node::BinaryOp { 
+						op: Operator::Equal, 
+						left: Box::new(
+							Node::Identifier(String::from("condition"))
+						), 
+						right: Box::new(
+							Node::Int(2)
+						) 
+					}),
+					body: Box::new(Some(Node::InstructionList { 
+						current: Box::new(
+							Node::VarDeclaration { 
+								name: String::from("test"),
+								value: Box::new(Node::Int(3))
+							}
+						), 
+						next: Box::new(None) 
+					})) 
 				}),
 				next: Box::new(None)
 			}

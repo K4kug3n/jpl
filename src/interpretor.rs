@@ -180,6 +180,20 @@ impl Visitor for InterpretorVisitor {
 		self.memory.entry(name.clone()).and_modify(|e| { *e = self.result });
 	}
 
+	fn visit_if_statement(&mut self, condition: &Node, body: &Option<Node>) {
+		if let Some(instruction_list) = body {
+			condition.accept(self);
+			if let ExpressionResult::Bool(result) = self.result {
+				if result {
+					instruction_list.accept(self);
+				}
+			}
+			else {
+				panic!("Except bool value as condition");
+			}
+		}
+	}
+
 	fn visit_instruction_list(&mut self, current: &Node, next: &Option<Node>) {
 		current.accept(self);
 

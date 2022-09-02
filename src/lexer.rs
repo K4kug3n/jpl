@@ -37,8 +37,11 @@ pub enum TokenKind {
 	Identifier,
 	LParenthesis,
 	RParenthesis,
+	LBracket,
+	RBracket,
 	Assign,
 	Let,
+	If,
 	Semilicon,
 	Eof
 }
@@ -70,8 +73,8 @@ pub struct Lexer<'a> {
 
 impl Lexer<'_> {
 	// TODO: Change this to static hashmap
-	const RESERVED_KEYWORDS : [&'static str; 20] = 
-	["+", "-", "*", "/", "(", ")", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "!", "let", "true", "false"];
+	const RESERVED_KEYWORDS : [&'static str; 23] = 
+	["+", "-", "*", "/", "(", ")", "{", "}", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "!", "let", "true", "false", "if"];
 
 	pub fn new(program: &str) -> Lexer {
 		let mut new_lexer = Lexer {
@@ -170,9 +173,12 @@ impl Lexer<'_> {
 			"||" => TokenKind::Operator(Operator::LogicalOr),
 			"(" => TokenKind::LParenthesis,
 			")" => TokenKind::RParenthesis,
+			"{" => TokenKind::LBracket,
+			"}" => TokenKind::RBracket,
 			"=" => TokenKind::Assign,
 			";" => TokenKind::Semilicon,
 			"let" => TokenKind::Let,
+			"if" => TokenKind::If,
 			"true" => TokenKind::Bool,
 			"false" => TokenKind::Bool,
 			"==" => TokenKind::Operator(Operator::Equal),
@@ -243,6 +249,7 @@ mod tests {
 		expect_token_kind(">", TokenKind::Operator(Operator::Greater));
 		expect_token_kind("<", TokenKind::Operator(Operator::Lower));
 		expect_token_kind("!", TokenKind::Operator(Operator::Not));
+		expect_token_kind("=", TokenKind::Assign);
 	}
 
 	#[test]
@@ -266,18 +273,11 @@ mod tests {
 	}
 
 	#[test]
-	fn left_parenthesis_token() {
+	fn pair_token() {
 		expect_token_kind("(", TokenKind::LParenthesis);
-	}
-
-	#[test]
-	fn right_parenthesis_token() {
 		expect_token_kind(")", TokenKind::RParenthesis);
-	}
-
-	#[test]
-	fn assign_token() {
-		expect_token_kind("=", TokenKind::Assign);
+		expect_token_kind("{", TokenKind::LBracket);
+		expect_token_kind("}", TokenKind::RBracket);
 	}
 
 	#[test]
@@ -286,14 +286,11 @@ mod tests {
 	}
 
 	#[test]
-	fn let_token() {
-		expect_token_kind("let", TokenKind::Let);
-	}
-
-	#[test]
-	fn bool_token() {
+	fn keyword_token() {
 		expect_token_kind("true", TokenKind::Bool);
 		expect_token_kind("false", TokenKind::Bool);
+		expect_token_kind("let", TokenKind::Let);
+		expect_token_kind("if", TokenKind::If);
 	}
 
 	#[test]
@@ -348,6 +345,18 @@ mod tests {
 		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::GreaterOrEq));
 		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
 		assert_eq!(lexer.next_token().kind, TokenKind::Semilicon);
+	}
+
+	#[test]
+	fn if_statement_lexing() {
+		let mut lexer = Lexer::new("if id == 2 { }");
+
+		assert_eq!(lexer.next_token().kind, TokenKind::If);
+		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::Equal));
+		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
+		assert_eq!(lexer.next_token().kind, TokenKind::LBracket);
+		assert_eq!(lexer.next_token().kind, TokenKind::RBracket);
 	}
 
 	#[test]
