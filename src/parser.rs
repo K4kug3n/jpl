@@ -37,8 +37,12 @@ pub enum Node {
 	},
 	FunctionDeclaration {
 		name: String,
-		args: Vec<String>,
+		params: Vec<String>,
 		body: Box<Option<Node>>
+	},
+	FunctionCall {
+		name: String,
+		args: Vec<Node>
 	}
 }
 
@@ -55,7 +59,8 @@ impl Visitable for Node {
 			Node::VarAssignation { name, value } => visitor.visit_var_assignation(name, value),
 			Node::IfStatement { condition, body } => visitor.visit_if_statement(condition, body),
 			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next),
-			Node::FunctionDeclaration { name, args, body } => visitor.visit_function_declaration(name, args, body),
+			Node::FunctionDeclaration { name, params: args, body } => visitor.visit_function_declaration(name, args, body),
+			Node::FunctionCall { name, args } => visitor.visit_function_call(name, args),
         }
     }
 }
@@ -95,6 +100,21 @@ impl Parser<'_> {
 		self.current_token.kind == kind
 	}
 
+	fn parse_args(&mut self) -> Vec<Node> {
+		let mut args : Vec<Node> = Vec::new();
+		if self.current_token.kind != TokenKind::RParenthesis {
+			args.push(self.parse_expression());
+
+			while self.current_token.kind == TokenKind::Coma {
+				self.advance();
+
+				args.push(self.parse_expression());
+			}
+		}
+
+		args
+	}
+
 	fn primary(&mut self) -> Node {
 		match self.current_token.kind {
 			TokenKind::Integer => {
@@ -123,13 +143,26 @@ impl Parser<'_> {
 
 				self.advance();
 
-				return Node::Identifier(name);
+				if self.current_token.kind != TokenKind::LParenthesis {
+					return Node::Identifier(name);
+				}
+
+				self.advance();
+
+				let args = self.parse_args();
+
+				self.eat(TokenKind::RParenthesis);
+				self.eat(TokenKind::Semilicon);
+
+				Node::FunctionCall { 
+					name: name,
+					args: args,
+				}
 			},
 			TokenKind::LParenthesis => {
 				self.advance();
 
-				let lhs = self.primary();
-				let exp = self.parse_expression(lhs, 0);
+				let exp = self.parse_expression();
 
 				self.eat(TokenKind::RParenthesis);
 
@@ -162,7 +195,13 @@ impl Parser<'_> {
 		}
 	}
 
-	fn parse_expression(&mut self, mut lhs: Node, precedence: i16) -> Node {
+	fn parse_expression(&mut self) -> Node {
+		let lhs = self.primary();
+		
+		self.expression(lhs, 0)
+	}
+
+	fn expression(&mut self, mut lhs: Node, precedence: i16) -> Node {
 		
 		while let TokenKind::Operator(op) = self.current_token.kind {
 			if op.precedence() < precedence {
@@ -173,7 +212,7 @@ impl Parser<'_> {
 			let mut rhs = self.primary();
 			while let TokenKind::Operator(lookahead) = self.current_token.kind {
 				if lookahead.precedence() > op.precedence() {
-					rhs = self.parse_expression(rhs, op.precedence() + 1);
+					rhs = self.expression(rhs, op.precedence() + 1);
 				}
 				else {
 					break;
@@ -200,8 +239,7 @@ impl Parser<'_> {
 				self.eat(TokenKind::Identifier);
 				self.eat(TokenKind::Assign);
 
-				let lhs = self.primary();
-				let value = self.parse_expression(lhs, 0);
+				let value = self.parse_expression();
 
 				self.eat(TokenKind::Semilicon);
 
@@ -214,23 +252,39 @@ impl Parser<'_> {
 				let name = self.current_token.value.clone();
 				self.eat(TokenKind::Identifier);
 
-				self.eat(TokenKind::Assign);
+				match self.current_token.kind {
+					TokenKind::Assign => {
+						self.advance();
 
-				let lhs = self.primary();
-				let value = self.parse_expression(lhs, 0);
+						let value = self.parse_expression();
 
-				self.eat(TokenKind::Semilicon);
+						self.eat(TokenKind::Semilicon);
 
-				Node::VarAssignation { 
-					name: name,
-					value: Box::new(value)
-				}
+						Node::VarAssignation { 
+							name: name,
+							value: Box::new(value)
+						}
+					},
+					TokenKind::LParenthesis => {
+						self.advance();
+
+						let args = self.parse_args();
+
+						self.eat(TokenKind::RParenthesis);
+						self.eat(TokenKind::Semilicon);
+
+						Node::FunctionCall { 
+							name: name,
+							args: args,
+						}
+					},
+					_ => panic!("Wront kind after Identifier")
+				}				
 			},
 			TokenKind::If => {
 				self.advance();
 
-				let lhs = self.primary();
-				let value = self.parse_expression(lhs, 0);
+				let value = self.parse_expression();
 
 				self.eat(TokenKind::LBracket);
 
@@ -251,16 +305,16 @@ impl Parser<'_> {
 			
 				self.eat(TokenKind::LParenthesis);
 
-				let mut args : Vec<String> = Vec::new();
+				let mut params : Vec<String> = Vec::new();
 				if self.current_token.kind == TokenKind::Identifier {
-					args.push(self.current_token.value.clone());
+					params.push(self.current_token.value.clone());
 
 					self.advance();
 
 					while self.current_token.kind == TokenKind::Coma {
 						self.advance();
 
-						args.push(self.current_token.value.clone());
+						params.push(self.current_token.value.clone());
 
 						self.eat(TokenKind::Identifier);
 					}
@@ -275,7 +329,7 @@ impl Parser<'_> {
 
 				Node::FunctionDeclaration { 
 					name: name, 
-					args: args, 
+					params: params, 
 					body: Box::new(body),
 				}
 			}
@@ -391,8 +445,35 @@ mod tests {
 			Node::InstructionList {
 				current: Box::new(Node::FunctionDeclaration { 
 					name: String::from("foo"), 
-					args: Vec::from([String::from("arg1"), String::from("arg2"), String::from("arg3")]), 
+					params: Vec::from([String::from("arg1"), String::from("arg2"), String::from("arg3")]), 
 					body: Box::new(None) 
+				}),
+				next: Box::new(None)
+			}
+		));
+	}
+
+	#[test]
+	fn function_call_parsing(){
+		let mut lexer = Lexer::new("foo(arg1, arg2 + 2, arg3);");
+
+		let mut parser = Parser::new(&mut lexer);
+
+		let ast = parser.ast();
+
+		assert_eq!(ast,Some(
+			Node::InstructionList {
+				current: Box::new(Node::FunctionCall { 
+					name: String::from("foo"),
+					args: Vec::from([
+						Node::Identifier(String::from("arg1")),
+						Node::BinaryOp { 
+							op: Operator::Add, 
+							left: Box::new(Node::Identifier(String::from("arg2"))), 
+							right: Box::new(Node::Int(2)) 
+						},
+						Node::Identifier(String::from("arg3")),
+					])
 				}),
 				next: Box::new(None)
 			}

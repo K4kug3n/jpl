@@ -12,11 +12,9 @@ enum ExpressionResult {
 	Bool(bool)
 }
 
-// Duplicate with FunctionDeclaration variant of Node
 #[derive(Debug)]
 struct Function {
-	name: String,
-	args: Vec<String>,
+	params: Vec<String>,
 	body: Option<Node>
 }
 
@@ -215,9 +213,34 @@ impl Visitor for InterpretorVisitor {
 
 	fn visit_function_declaration(&mut self, name: &String, args: &Vec<String>, body: &Option<Node>) {
 		self.functions.insert(name.clone(), Function {
-			name: name.clone(),
-			args: args.clone(),
+			params: args.clone(),
 			body: body.clone(),
 		});
+	}
+
+	fn visit_function_call(&mut self, name: &String, args: &Vec<Node>) {
+		let result = self.functions.get(name);
+		match result {
+			Some(func) => {
+				if func.params.len() != args.len() {
+					panic!("Wrong number of args to call {}", name);
+				}
+
+				match func.body.clone() {
+					Some(body) => {
+						let func_params = func.params.clone();
+						for (i, arg) in args.iter().enumerate() {
+							arg.accept(self);
+
+							self.memory.insert(func_params[i].clone(), self.result.clone());
+						}
+
+						body.accept(self)
+					},
+					None => {}
+				}
+			},
+			None => panic!("Function not declared")
+		}
 	}
 }

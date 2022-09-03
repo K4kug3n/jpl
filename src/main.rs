@@ -5,7 +5,7 @@ use jpl::parser;
 fn main() {
 	let program = "
 		fn foo(arg1, arg2, arg3) {
-			let inside = 2;
+			let inside = arg2;
 		}
 
 		let Test = (-6 * 2) + (2 * 3) + 3;
@@ -17,6 +17,8 @@ fn main() {
 		if Test == 2 {
 			let negative = -1;
 		}
+
+		foo(1, Test + 3, 2);
 	";
 	
 	let mut lexer = lexer::Lexer::new(program);

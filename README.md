@@ -21,11 +21,14 @@ Inspired by Compilers & Interpreters course from University of Geneva
 
 program ::= list_instr  
 
-list-instr ::= [ instr list_instr ]
+list-instr ::= [ instr list_instr ]  
 
 instr ::= [ 'let' ] VARIABLE '=' expression;  
-instr ::= 'if' expression '{' [ list-instr ] '}' 
-instr ::= 'fn' IDENTIFIER '(' [ IDENTIFIER [ ',' IDENTIFIER ] ] ')' '{' [ list-instr ] '}' 
+instr ::= function-call;
+instr ::= 'if' expression '{' [ list-instr ] '}'  
+instr ::= 'fn' IDENTIFIER '(' [ IDENTIFIER [ ',' IDENTIFIER ] ] * ')' '{' [ list-instr ] '}' 
+
+function-call ::= IDENTIFIER '(' [ expression [ ',' expression ] * ] ')'  
 
 expression ::= equality-expression  
 
@@ -35,4 +38,4 @@ additive-expression ::= multiplicative-expression [ ( '+' | '-' | '||' ) multipl
 
 multiplicative-expression ::= primary [ ( '*' | '/' | '&&' ) primary ] *  
 
-primary ::= '(' expression ')' | NUMBER | IDENTIFIER | BOOL | '!' primary | '-' primary
+primary ::= '(' expression ')' | NUMBER | IDENTIFIER | BOOL | '!' primary | '-' primary | function-call
