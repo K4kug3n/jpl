@@ -243,6 +243,42 @@ impl Parser<'_> {
 					body: Box::new(body)
 				}
 			}
+			TokenKind::Fn => {
+				self.advance();
+
+				let name = self.current_token.value.clone();
+				self.eat(TokenKind::Identifier);
+			
+				self.eat(TokenKind::LParenthesis);
+
+				let mut args : Vec<String> = Vec::new();
+				if self.current_token.kind == TokenKind::Identifier {
+					args.push(self.current_token.value.clone());
+
+					self.advance();
+
+					while self.current_token.kind == TokenKind::Coma {
+						self.advance();
+
+						args.push(self.current_token.value.clone());
+
+						self.eat(TokenKind::Identifier);
+					}
+				}
+
+				self.eat(TokenKind::RParenthesis);
+				self.eat(TokenKind::LBracket);
+
+				let body = self.list_instr();
+
+				self.eat(TokenKind::RBracket);
+
+				Node::FunctionDeclaration { 
+					name: name, 
+					args: args, 
+					body: Box::new(body),
+				}
+			}
 			_ => { panic!("instr : no valid token kind {:?}", self.current_token); }
 		}
 	}
@@ -337,6 +373,26 @@ mod tests {
 						), 
 						next: Box::new(None) 
 					})) 
+				}),
+				next: Box::new(None)
+			}
+		));
+	}
+
+	#[test]
+	fn function_declaration_parsing(){
+		let mut lexer = Lexer::new("fn foo(arg1, arg2, arg3) { }");
+
+		let mut parser = Parser::new(&mut lexer);
+
+		let ast = parser.ast();
+
+		assert_eq!(ast,Some(
+			Node::InstructionList {
+				current: Box::new(Node::FunctionDeclaration { 
+					name: String::from("foo"), 
+					args: Vec::from([String::from("arg1"), String::from("arg2"), String::from("arg3")]), 
+					body: Box::new(None) 
 				}),
 				next: Box::new(None)
 			}

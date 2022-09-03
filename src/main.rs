@@ -4,6 +4,10 @@ use jpl::parser;
 
 fn main() {
 	let program = "
+		fn foo(arg1, arg2, arg3) {
+			let inside = 2;
+		}
+
 		let Test = (-6 * 2) + (2 * 3) + 3;
 		let test = 32.5;
 		Test = 2;

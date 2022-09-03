@@ -23,7 +23,9 @@ program ::= list_instr
 
 list-instr ::= [ instr list_instr ]
 
-instr ::= [ "let" ] VARIABLE "=" expression;  
+instr ::= [ 'let' ] VARIABLE '=' expression;  
+instr ::= 'if' expression '{' [ list-instr ] '}' 
+instr ::= 'fn' IDENTIFIER '(' [ IDENTIFIER [ ',' IDENTIFIER ] ] ')' '{' [ list-instr ] '}' 
 
 expression ::= equality-expression  
 
@@ -33,4 +35,4 @@ additive-expression ::= multiplicative-expression [ ( '+' | '-' | '||' ) multipl
 
 multiplicative-expression ::= primary [ ( '*' | '/' | '&&' ) primary ] *  
 
-primary ::= '(' expression ')' | NUMBER | VARIABLE | BOOL | '!' primary | '-' primary
+primary ::= '(' expression ')' | NUMBER | IDENTIFIER | BOOL | '!' primary | '-' primary
