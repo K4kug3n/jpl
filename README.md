@@ -24,7 +24,7 @@ program ::= list_instr
 list-instr ::= [ instr list_instr ]  
 
 instr ::= [ 'let' ] VARIABLE '=' expression;  
-instr ::= function-call;
+instr ::= function-call;  
 instr ::= 'if' expression '{' [ list-instr ] '}'  
 instr ::= 'fn' IDENTIFIER '(' [ IDENTIFIER [ ',' IDENTIFIER ] ] * ')' '{' [ list-instr ] '}' 
 
