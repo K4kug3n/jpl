@@ -12,9 +12,18 @@ enum ExpressionResult {
 	Bool(bool)
 }
 
+// Duplicate with FunctionDeclaration variant of Node
+#[derive(Debug)]
+struct Function {
+	name: String,
+	args: Vec<String>,
+	body: Option<Node>
+}
+
 pub struct InterpretorVisitor { 
 	result: ExpressionResult,
-	memory: HashMap<String, ExpressionResult>
+	memory: HashMap<String, ExpressionResult>,
+	functions: HashMap<String, Function>,
 }
 
 impl InterpretorVisitor {
@@ -22,7 +31,8 @@ impl InterpretorVisitor {
 		// TODO: Fixme this awfull placeholder
 		InterpretorVisitor {
 			result: ExpressionResult::Float(0.0),
-			memory: HashMap::new()
+			memory: HashMap::new(),
+			functions: HashMap::new(),
 		}
 	}
 
@@ -30,6 +40,7 @@ impl InterpretorVisitor {
 		ast.accept(self);
 
 		println!("{:?}", self.memory);
+		println!("{:?}", self.functions);
 	}
 
 	fn apply_binary_op_float(op: &Operator, lhs: f64, rhs: f64) -> ExpressionResult {
@@ -200,5 +211,13 @@ impl Visitor for InterpretorVisitor {
 		if let Some(x) = next {
 			x.accept(self);
 		}
+	}
+
+	fn visit_function_declaration(&mut self, name: &String, args: &Vec<String>, body: &Option<Node>) {
+		self.functions.insert(name.clone(), Function {
+			name: name.clone(),
+			args: args.clone(),
+			body: body.clone(),
+		});
 	}
 }

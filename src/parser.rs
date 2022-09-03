@@ -34,6 +34,11 @@ pub enum Node {
 	InstructionList {
 		current: Box<Node>,
 		next: Box<Option<Node>>
+	},
+	FunctionDeclaration {
+		name: String,
+		args: Vec<String>,
+		body: Box<Option<Node>>
 	}
 }
 
@@ -50,6 +55,7 @@ impl Visitable for Node {
 			Node::VarAssignation { name, value } => visitor.visit_var_assignation(name, value),
 			Node::IfStatement { condition, body } => visitor.visit_if_statement(condition, body),
 			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next),
+			Node::FunctionDeclaration { name, args, body } => visitor.visit_function_declaration(name, args, body),
         }
     }
 }

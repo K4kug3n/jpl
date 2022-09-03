@@ -39,9 +39,11 @@ pub enum TokenKind {
 	RParenthesis,
 	LBracket,
 	RBracket,
+	Coma,
 	Assign,
 	Let,
 	If,
+	Fn,
 	Semilicon,
 	Eof
 }
@@ -73,8 +75,8 @@ pub struct Lexer<'a> {
 
 impl Lexer<'_> {
 	// TODO: Change this to static hashmap
-	const RESERVED_KEYWORDS : [&'static str; 23] = 
-	["+", "-", "*", "/", "(", ")", "{", "}", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "!", "let", "true", "false", "if"];
+	const RESERVED_KEYWORDS : [&'static str; 25] = 
+	["+", "-", "*", "/", "(", ")", "{", "}", ",", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "!", "let", "true", "false", "if", "fn"];
 
 	pub fn new(program: &str) -> Lexer {
 		let mut new_lexer = Lexer {
@@ -92,7 +94,7 @@ impl Lexer<'_> {
 	}
 
 	fn is_identifier_symbol(value: char) -> bool {
-		value.is_alphabetic() || value == '_'
+		value.is_alphanumeric() || value == '_'
 	}
 
 	fn is_number_symbol(value: char) -> bool {
@@ -175,10 +177,12 @@ impl Lexer<'_> {
 			")" => TokenKind::RParenthesis,
 			"{" => TokenKind::LBracket,
 			"}" => TokenKind::RBracket,
+			"," => TokenKind::Coma,
 			"=" => TokenKind::Assign,
 			";" => TokenKind::Semilicon,
 			"let" => TokenKind::Let,
 			"if" => TokenKind::If,
+			"fn" => TokenKind::Fn,
 			"true" => TokenKind::Bool,
 			"false" => TokenKind::Bool,
 			"==" => TokenKind::Operator(Operator::Equal),
@@ -355,6 +359,21 @@ mod tests {
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
 		assert_eq!(lexer.next_token().kind, TokenKind::Operator(Operator::Equal));
 		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
+		assert_eq!(lexer.next_token().kind, TokenKind::LBracket);
+		assert_eq!(lexer.next_token().kind, TokenKind::RBracket);
+	}
+
+	#[test]
+	fn function_declaration_lexing() {
+		let mut lexer = Lexer::new("fn foo(arg1, arg2) { }");
+
+		assert_eq!(lexer.next_token().kind, TokenKind::Fn);
+		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::LParenthesis);
+		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::Coma);
+		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::RParenthesis);
 		assert_eq!(lexer.next_token().kind, TokenKind::LBracket);
 		assert_eq!(lexer.next_token().kind, TokenKind::RBracket);
 	}

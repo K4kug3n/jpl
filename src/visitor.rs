@@ -12,6 +12,7 @@ pub trait Visitor {
 	fn visit_var_declaration(&mut self, name: &String, value: &Node);
 	fn visit_if_statement(&mut self, condition: &Node, body: &Option<Node>);
 	fn visit_instruction_list(&mut self, current: &Node, next: &Option<Node>);
+	fn visit_function_declaration(&mut self, name: &String, args: &Vec<String>, body: &Option<Node>);
 }
 
 pub trait Visitable {
