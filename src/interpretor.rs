@@ -263,7 +263,9 @@ impl Visitor for InterpretorVisitor {
 			condition.accept(self);
 			if let ExpressionResult::Bool(result) = self.result {
 				if result {
+					self.scopes.push(Scope::new());
 					instruction_list.accept(self);
+					self.scopes.pop();
 				}
 			}
 			else {
