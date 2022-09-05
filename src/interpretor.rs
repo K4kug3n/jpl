@@ -258,6 +258,12 @@ impl Visitor for InterpretorVisitor {
 		}
 	}
 
+	fn visit_return_statement(&mut self, value: &Option<Node>) {
+		if let Some(exp) = value {
+			exp.accept(self);
+		}
+	}
+
 	fn visit_if_statement(&mut self, condition: &Node, body: &Option<Node>) {
 		if let Some(instruction_list) = body {
 			condition.accept(self);

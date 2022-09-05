@@ -44,6 +44,7 @@ pub enum TokenKind {
 	Let,
 	If,
 	Fn,
+	Return,
 	Semilicon,
 	Eof
 }
@@ -75,8 +76,8 @@ pub struct Lexer<'a> {
 
 impl Lexer<'_> {
 	// TODO: Change this to static hashmap
-	const RESERVED_KEYWORDS : [&'static str; 25] = 
-	["+", "-", "*", "/", "(", ")", "{", "}", ",", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "!", "let", "true", "false", "if", "fn"];
+	const RESERVED_KEYWORDS : [&'static str; 26] = 
+	["+", "-", "*", "/", "(", ")", "{", "}", ",", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "!", "let", "true", "false", "if", "fn", "return"];
 
 	pub fn new(program: &str) -> Lexer {
 		let mut new_lexer = Lexer {
@@ -183,6 +184,7 @@ impl Lexer<'_> {
 			"let" => TokenKind::Let,
 			"if" => TokenKind::If,
 			"fn" => TokenKind::Fn,
+			"return" => TokenKind::Return,
 			"true" => TokenKind::Bool,
 			"false" => TokenKind::Bool,
 			"==" => TokenKind::Operator(Operator::Equal),
@@ -295,6 +297,7 @@ mod tests {
 		expect_token_kind("false", TokenKind::Bool);
 		expect_token_kind("let", TokenKind::Let);
 		expect_token_kind("if", TokenKind::If);
+		expect_token_kind("return", TokenKind::Return);
 	}
 
 	#[test]

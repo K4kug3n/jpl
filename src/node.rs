@@ -24,6 +24,9 @@ pub enum Node {
 		name: String,
 		value: Box<Node>
 	},
+	ReturnStatement {
+		value: Box<Option<Node>>
+	},
 	IfStatement {
 		condition: Box<Node>,
 		body: Box<Option<Node>>
@@ -54,6 +57,7 @@ impl Visitable for Node {
 			Node::UnaryOp { op, right } => visitor.visit_unary_op(op, right),
 			Node::VarDeclaration { name, value } => visitor.visit_var_declaration(name, value),
 			Node::VarAssignation { name, value } => visitor.visit_var_assignation(name, value),
+			Node::ReturnStatement { value } => visitor.visit_return_statement(value),
 			Node::IfStatement { condition, body } => visitor.visit_if_statement(condition, body),
 			Node::InstructionList { current, next } => visitor.visit_instruction_list(current, next),
 			Node::FunctionDeclaration { name, params: args, body } => visitor.visit_function_declaration(name, args, body),

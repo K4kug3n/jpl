@@ -91,7 +91,6 @@ impl Parser<'_> {
 				let args = self.parse_args();
 
 				self.eat(TokenKind::RParenthesis);
-				self.eat(TokenKind::Semilicon);
 
 				Node::FunctionCall { 
 					name: name,
@@ -189,7 +188,7 @@ impl Parser<'_> {
 			},
 			TokenKind::Identifier => {
 				let name = self.current_token.value.clone();
-				self.eat(TokenKind::Identifier);
+				self.advance();
 
 				match self.current_token.kind {
 					TokenKind::Assign => {
@@ -219,6 +218,24 @@ impl Parser<'_> {
 					},
 					_ => panic!("Wront kind after Identifier")
 				}				
+			},
+			TokenKind::Return => {
+				self.advance();
+
+				match self.current_token.kind {
+					TokenKind::Semilicon => {
+						self.advance();
+
+						Node::ReturnStatement { value: Box::new(None) }
+					},
+					_ => {
+						let value = self.parse_expression();
+
+						self.eat(TokenKind::Semilicon);
+
+						Node::ReturnStatement { value: Box::new(Some(value)) }
+					},
+				}
 			},
 			TokenKind::If => {
 				self.advance();
@@ -279,6 +296,20 @@ impl Parser<'_> {
 	fn list_instr(&mut self) -> Option<Node> {
 		if self.expect(TokenKind::Eof) || self.expect(TokenKind::RBracket) {
 			return None;
+		}
+
+		//TODO: May not be managed by parser (see CFG)
+		if self.expect(TokenKind::Return) {
+			let result = Node::InstructionList { 
+				current: Box::new(self.instr()),
+				next: Box::new(None) 
+			};
+
+			while !(self.expect(TokenKind::Eof) || self.expect(TokenKind::RBracket)){
+				self.advance();
+			}
+
+			return Some(result);
 		}
 
 		Some(Node::InstructionList { 
@@ -374,7 +405,7 @@ mod tests {
 
 	#[test]
 	fn function_declaration_parsing(){
-		let mut lexer = Lexer::new("fn foo(arg1, arg2, arg3) { }");
+		let mut lexer = Lexer::new("fn foo(arg1, arg2, arg3) { return 2; let test = 2; }");
 
 		let mut parser = Parser::new(&mut lexer);
 
@@ -385,7 +416,12 @@ mod tests {
 				current: Box::new(Node::FunctionDeclaration { 
 					name: String::from("foo"), 
 					params: Vec::from([String::from("arg1"), String::from("arg2"), String::from("arg3")]), 
-					body: Box::new(None) 
+					body: Box::new(Some(Node::InstructionList { 
+						current: Box::new(Node::ReturnStatement { 
+							value: Box::new(Some(Node::Int(2))) 
+						}),
+						next: Box::new(None) 
+					}))
 				}),
 				next: Box::new(None)
 			}

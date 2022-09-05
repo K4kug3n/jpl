@@ -8,6 +8,12 @@ fn main() {
 			let inside = arg2;
 		}
 
+		fn add(a, b) {
+			return a + b;
+		}
+
+		let result = add(2, 1);
+
 		let Test = (-6 * 2) + (2 * 3) + 3;
 		let test = 32.5;
 		Test = 2;
