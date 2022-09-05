@@ -1,4 +1,4 @@
-use crate::parser::{Node};
+use crate::node::{Node};
 use crate::operator::{Operator};
 
 pub trait Visitor {

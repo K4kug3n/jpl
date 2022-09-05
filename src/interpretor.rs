@@ -2,7 +2,7 @@ use core::panic;
 use std::collections::HashMap;
 
 use crate::operator::{Operator};
-use crate::parser::{Node};
+use crate::node::{Node};
 use crate::visitor::{Visitor, Visitable};
 
 #[derive(Clone, Copy, Debug)]
