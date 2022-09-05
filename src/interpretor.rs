@@ -12,16 +12,30 @@ enum ExpressionResult {
 	Bool(bool)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Function {
 	params: Vec<String>,
 	body: Option<Node>
 }
 
+#[derive(Clone)]
+struct Scope {
+	memory: HashMap<String, ExpressionResult>,
+	functions: HashMap<String, Function>
+}
+
+impl Scope {
+	pub fn new() -> Scope {
+		Scope { 
+			memory: HashMap::new(),
+			functions: HashMap::new(), // TODO: Allow nested function, may not keep it
+		}
+	}
+}
+
 pub struct InterpretorVisitor { 
 	result: ExpressionResult,
-	memory: HashMap<String, ExpressionResult>,
-	functions: HashMap<String, Function>,
+	scopes: Vec<Scope>,
 }
 
 impl InterpretorVisitor {
@@ -29,16 +43,65 @@ impl InterpretorVisitor {
 		// TODO: Fixme this awfull placeholder
 		InterpretorVisitor {
 			result: ExpressionResult::Float(0.0),
-			memory: HashMap::new(),
-			functions: HashMap::new(),
+			scopes: Vec::from([ Scope::new() ])
 		}
 	}
 
 	pub fn interpret(&mut self, ast : Node) {
 		ast.accept(self);
 
-		println!("{:?}", self.memory);
-		println!("{:?}", self.functions);
+		for scope in self.scopes.iter() {
+			println!("{:?}", scope.functions);
+			println!("{:?}", scope.memory);
+		}
+	}
+
+	fn resolve_scope_var(&mut self, name: &str) -> Option<&mut ExpressionResult> {
+		for scope in self.scopes.iter_mut().rev() {
+			let result = scope.memory.get_mut(name);
+
+			if let Some(_) = result {
+				return result;
+			}
+		}
+
+		None
+	}
+
+	fn resolve_scope_function(&self, name: &str) -> Option<&Function> {
+		for scope in self.scopes.iter().rev() {
+			let result = scope.functions.get(name);
+
+			if let Some(_) = result {
+				return result;
+			}
+		}
+
+		None
+	}
+
+	fn insert_var(&mut self, name: &str, value: ExpressionResult) {
+		let current = self.scopes.last_mut();
+
+		if let Some(scope) = current {
+			scope.memory.insert(String::from(name), value);
+		}
+		else {
+			panic!("No scope");
+		}
+		
+	}
+
+	fn insert_function(&mut self, name: &str, value: Function) {
+		let current = self.scopes.last_mut();
+
+		if let Some(scope) = current {
+			scope.functions.insert(String::from(name), value);
+		}
+		else {
+			panic!("No scope");
+		}
+		
 	}
 
 	fn apply_binary_op_float(op: &Operator, lhs: f64, rhs: f64) -> ExpressionResult {
@@ -119,7 +182,7 @@ impl Visitor for InterpretorVisitor {
 	}
 
 	fn visit_identifier(&mut self, name: &String) {
-		let result = self.memory.get(name);
+		let result = self.resolve_scope_var(name);
 		match result {
 			Some(x) => { self.result = *x },
 			None => panic!("Identifier not declared")
@@ -180,13 +243,19 @@ impl Visitor for InterpretorVisitor {
 	fn visit_var_declaration(&mut self, name: &String, value: &Node) {
 		value.accept(self);
 
-		self.memory.insert(name.clone(), self.result);
+		self.insert_var(name, self.result);
 	}
 
 	fn visit_var_assignation(&mut self, name: &String, value: &Node) {
 		value.accept(self);
+		let result = self.result;
 
-		self.memory.entry(name.clone()).and_modify(|e| { *e = self.result });
+		match self.resolve_scope_var(name) {
+			Some(var) => {
+				*var = result;
+			},
+			None => panic!("Not declared identifier {}", name)
+		}
 	}
 
 	fn visit_if_statement(&mut self, condition: &Node, body: &Option<Node>) {
@@ -212,14 +281,14 @@ impl Visitor for InterpretorVisitor {
 	}
 
 	fn visit_function_declaration(&mut self, name: &String, args: &Vec<String>, body: &Option<Node>) {
-		self.functions.insert(name.clone(), Function {
+		self.insert_function(name, Function {
 			params: args.clone(),
 			body: body.clone(),
 		});
 	}
 
 	fn visit_function_call(&mut self, name: &String, args: &Vec<Node>) {
-		let result = self.functions.get(name);
+		let result = self.resolve_scope_function(name);
 		match result {
 			Some(func) => {
 				if func.params.len() != args.len() {
@@ -228,14 +297,21 @@ impl Visitor for InterpretorVisitor {
 
 				match func.body.clone() {
 					Some(body) => {
+						let mut function_scope = Scope::new();
+
 						let func_params = func.params.clone();
 						for (i, arg) in args.iter().enumerate() {
 							arg.accept(self);
 
-							self.memory.insert(func_params[i].clone(), self.result.clone());
+							function_scope.memory.insert(func_params[i].clone(), self.result.clone());
 						}
 
-						body.accept(self)
+						let caller_scopes = self.scopes.clone();
+						self.scopes = Vec::from([function_scope]);
+
+						body.accept(self);
+
+						self.scopes = caller_scopes;
 					},
 					None => {}
 				}
