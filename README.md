@@ -26,8 +26,8 @@ list-instr ::= [ instr list_instr ]
 instr ::= [ 'let' ] VARIABLE '=' expression ';'  
 instr ::= function-call ';'  
 instr ::= 'if' expression '{' [ list-instr ] '}'  
-instr ::= 'fn' IDENTIFIER '(' [ IDENTIFIER [ ',' IDENTIFIER ] ] * ')' '{' [ list-instr ] '}' 
-instr ::= 'return' [ primary ] ';' 
+instr ::= 'fn' IDENTIFIER '(' [ IDENTIFIER [ ',' IDENTIFIER ] ] * ')' '{' [ list-instr ] '}'  
+instr ::= 'return' [ expression ] ';'  
 
 function-call ::= IDENTIFIER '(' [ expression [ ',' expression ] * ] ')'  
 
