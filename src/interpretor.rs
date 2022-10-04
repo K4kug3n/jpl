@@ -1,37 +1,11 @@
 use core::panic;
-use std::collections::HashMap;
 
-use crate::operator::{Operator};
-use crate::node::{Node};
+use crate::operator::Operator;
+use crate::node::Node;
 use crate::visitor::{Visitor, Visitable};
-
-#[derive(Clone, Copy, Debug)]
-enum ExpressionResult {
-	Int(i64),
-	Float(f64),
-	Bool(bool)
-}
-
-#[derive(Debug, Clone)]
-struct Function {
-	params: Vec<String>,
-	body: Option<Node>
-}
-
-#[derive(Clone)]
-struct Scope {
-	memory: HashMap<String, ExpressionResult>,
-	functions: HashMap<String, Function>
-}
-
-impl Scope {
-	pub fn new() -> Scope {
-		Scope { 
-			memory: HashMap::new(),
-			functions: HashMap::new(), // TODO: Allow nested function, may not keep it
-		}
-	}
-}
+use crate::expression_result::ExpressionResult;
+use crate::scope::Scope;
+use crate::function::Function;
 
 pub struct InterpretorVisitor { 
 	result: ExpressionResult,
