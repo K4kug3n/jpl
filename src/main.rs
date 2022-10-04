@@ -1,6 +1,7 @@
 use jpl::interpretor;
 use jpl::lexer;
 use jpl::parser;
+use jpl::type_checker;
 
 fn main() {
 	let program = "
@@ -34,6 +35,9 @@ fn main() {
 	let ast = parser.ast();
 
 	if let Some(node) = ast {
+		let mut checker = type_checker::TypeCheckerVisitor::new();
+		checker.check(&node);
+
 		let mut interpretor = interpretor::InterpretorVisitor::new();
 		interpretor.interpret(node);
 	}
