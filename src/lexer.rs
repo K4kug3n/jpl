@@ -91,7 +91,7 @@ impl Lexer<'_> {
 	}
 
 	fn is_blank_space(value : char) -> bool {
-		value == ' ' || value == '\n' || value == '\t'
+		value == ' ' || value == '\n' || value == '\t' || value == '\r'
 	}
 
 	fn is_identifier_symbol(value: char) -> bool {
