@@ -1,5 +1,6 @@
 use crate::text_iterator::{TextIterator, Symbol};
-use crate::operator::{Operator};
+use crate::operator::Operator;
+use crate::r#type::Type;
 
 #[derive(PartialEq)]
 struct Word {
@@ -31,15 +32,18 @@ impl Word {
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
 	Operator(Operator),
+	Type(Type),
 	Integer,
 	Float,
 	Bool,
 	Identifier,
+	Arrow,
 	LParenthesis,
 	RParenthesis,
 	LBracket,
 	RBracket,
 	Coma,
+	Colon,
 	Assign,
 	Let,
 	If,
@@ -76,8 +80,10 @@ pub struct Lexer<'a> {
 
 impl Lexer<'_> {
 	// TODO: Change this to static hashmap
-	const RESERVED_KEYWORDS : [&'static str; 26] = 
-	["+", "-", "*", "/", "(", ")", "{", "}", ",", "=", ";", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "!", "let", "true", "false", "if", "fn", "return"];
+	const RESERVED_KEYWORDS : [&'static str; 32] = 
+	["+", "-", "*", "/", "(", ")", "{", "}", ",", "=", ";", ":", "&&", "||", "==", "!=", ">=", "<=", ">", "<", "!", "->",
+	"let", "true", "false", "if", "fn", "return",
+	"int", "float", "bool", "void"];
 
 	pub fn new(program: &str) -> Lexer {
 		let mut new_lexer = Lexer {
@@ -181,12 +187,17 @@ impl Lexer<'_> {
 			"," => TokenKind::Coma,
 			"=" => TokenKind::Assign,
 			";" => TokenKind::Semilicon,
+			":" => TokenKind::Colon,
 			"let" => TokenKind::Let,
 			"if" => TokenKind::If,
 			"fn" => TokenKind::Fn,
 			"return" => TokenKind::Return,
 			"true" => TokenKind::Bool,
 			"false" => TokenKind::Bool,
+			"int" => TokenKind::Type(Type::Int),
+			"float" => TokenKind::Type(Type::Float),
+			"bool" => TokenKind::Type(Type::Bool),
+			"void" => TokenKind::Type(Type::Void),
 			"==" => TokenKind::Operator(Operator::Equal),
 			"!=" => TokenKind::Operator(Operator::NotEqual),
 			">=" => TokenKind::Operator(Operator::GreaterOrEq),
@@ -194,6 +205,7 @@ impl Lexer<'_> {
 			">" => TokenKind::Operator(Operator::Greater),
 			"<" => TokenKind::Operator(Operator::Lower),
 			"!" => TokenKind::Operator(Operator::Not),
+			"->" => TokenKind::Arrow,
 			_ => panic!("Unknow token")
 		}
 	}
@@ -323,6 +335,18 @@ mod tests {
 	}
 
 	#[test]
+	fn explicit_type_declaration_lexing() {
+		let mut lexer = Lexer::new("let test:int = 3;");
+		assert_eq!(lexer.next_token().kind, TokenKind::Let);
+		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::Colon);
+		assert_eq!(lexer.next_token().kind, TokenKind::Type(Type::Int));
+		assert_eq!(lexer.next_token().kind, TokenKind::Assign);
+		assert_eq!(lexer.next_token().kind, TokenKind::Integer);
+		assert_eq!(lexer.next_token().kind, TokenKind::Semilicon);
+	}
+
+	#[test]
 	fn bool_expression_lexing() {
 		let mut lexer = Lexer::new("let test=true&&false||identifier;");
 
@@ -368,15 +392,21 @@ mod tests {
 
 	#[test]
 	fn function_declaration_lexing() {
-		let mut lexer = Lexer::new("fn foo(arg1, arg2) { }");
+		let mut lexer = Lexer::new("fn foo(arg1: int, arg2: float) -> void { }");
 
 		assert_eq!(lexer.next_token().kind, TokenKind::Fn);
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
 		assert_eq!(lexer.next_token().kind, TokenKind::LParenthesis);
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::Colon);
+		assert_eq!(lexer.next_token().kind, TokenKind::Type(Type::Int));
 		assert_eq!(lexer.next_token().kind, TokenKind::Coma);
 		assert_eq!(lexer.next_token().kind, TokenKind::Identifier);
+		assert_eq!(lexer.next_token().kind, TokenKind::Colon);
+		assert_eq!(lexer.next_token().kind, TokenKind::Type(Type::Float));
 		assert_eq!(lexer.next_token().kind, TokenKind::RParenthesis);
+		assert_eq!(lexer.next_token().kind, TokenKind::Arrow);
+		assert_eq!(lexer.next_token().kind, TokenKind::Type(Type::Void));
 		assert_eq!(lexer.next_token().kind, TokenKind::LBracket);
 		assert_eq!(lexer.next_token().kind, TokenKind::RBracket);
 	}

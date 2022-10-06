@@ -140,7 +140,7 @@ impl Visitor for TypeCheckerVisitor {
 		}
 	}
 
-	fn visit_var_declaration(&mut self, name: &String, value: &Node) {
+	fn visit_var_declaration(&mut self, name: &String, _: &Option<Type>, value: &Node) {
 		value.accept(self);
 
 		self.insert_var(name, self.result);
@@ -169,7 +169,7 @@ impl Visitor for TypeCheckerVisitor {
 		}
 	}
 
-	fn visit_function_declaration(&mut self, _: &String, _: &Vec<String>, _: &Option<Node>) {
+	fn visit_function_declaration(&mut self, _: &String, _: &Vec<String>, _: &Vec<Type>, _: &Type, _: &Option<Node>) {
 		// TODO: Add parameters / return type
 	}
 	

@@ -6,6 +6,7 @@ use crate::visitor::{Visitor, Visitable};
 use crate::expression_result::ExpressionResult;
 use crate::scope::Scope;
 use crate::function::Function;
+use crate::r#type::Type;
 
 pub struct InterpretorVisitor { 
 	result: ExpressionResult,
@@ -214,7 +215,7 @@ impl Visitor for InterpretorVisitor {
 		}
 	}
 
-	fn visit_var_declaration(&mut self, name: &String, value: &Node) {
+	fn visit_var_declaration(&mut self, name: &String, _: &Option<Type>, value: &Node) {
 		value.accept(self);
 
 		self.insert_var(name, self.result);
@@ -262,9 +263,9 @@ impl Visitor for InterpretorVisitor {
 		}
 	}
 
-	fn visit_function_declaration(&mut self, name: &String, args: &Vec<String>, body: &Option<Node>) {
+	fn visit_function_declaration(&mut self, name: &String, param_names: &Vec<String>, _: &Vec<Type>, _: &Type, body: &Option<Node>) {
 		self.insert_function(name, Function {
-			params: args.clone(),
+			params: param_names.clone(),
 			body: body.clone(),
 		});
 	}

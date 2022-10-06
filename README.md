@@ -23,10 +23,11 @@ program ::= list_instr
 
 list-instr ::= [ instr list_instr ]  
 
-instr ::= [ 'let' ] VARIABLE '=' expression ';'  
+instr ::= 'let' IDENTIFIER [ ':' TYPE ] '=' expression ';'  
+instr ::= IDENTIFIER '=' expression ';'  
 instr ::= function-call ';'  
 instr ::= 'if' expression '{' [ list-instr ] '}'  
-instr ::= 'fn' IDENTIFIER '(' [ IDENTIFIER [ ',' IDENTIFIER ] ] * ')' '{' [ list-instr ] '}'  
+instr ::= 'fn' IDENTIFIER '(' [ IDENTIFIER ':' TYPE [ ',' IDENTIFIER ':' TYPE ] ] * ')' '->' TYPE '{' [ list-instr ] '}'  
 instr ::= 'return' [ expression ] ';'  
 
 function-call ::= IDENTIFIER '(' [ expression [ ',' expression ] * ] ')'  

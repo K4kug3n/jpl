@@ -3,6 +3,7 @@ use core::panic;
 use crate::operator::{Operator};
 use crate::lexer::{Lexer, Token, TokenKind};
 use crate::node::{Node};
+use crate::r#type::Type;
 
 fn to_bool(value: &str) -> bool {
 	value == "true"
@@ -175,6 +176,21 @@ impl Parser<'_> {
 				let name = self.current_token.value.clone();
 
 				self.eat(TokenKind::Identifier);
+
+				let mut declared_type = None;
+				if self.expect(TokenKind::Colon) {
+					self.advance();
+
+					match self.current_token.kind {
+						TokenKind::Type(explicit_type) => {
+							declared_type =	Some(explicit_type);
+						},
+						_ => panic!("Not a valid type") // TODO: Better error handling
+					}
+
+					self.advance();
+				}
+
 				self.eat(TokenKind::Assign);
 
 				let value = self.parse_expression();
@@ -183,6 +199,7 @@ impl Parser<'_> {
 
 				Node::VarDeclaration { 
 					name: name,
+					declared_type: declared_type,
 					value: Box::new(value)
 				}
 			},
@@ -261,22 +278,55 @@ impl Parser<'_> {
 			
 				self.eat(TokenKind::LParenthesis);
 
-				let mut params : Vec<String> = Vec::new();
+				let mut param_names : Vec<String> = Vec::new();
+				let mut param_types : Vec<Type> = Vec::new();
 				if self.current_token.kind == TokenKind::Identifier {
-					params.push(self.current_token.value.clone());
-
+					param_names.push(self.current_token.value.clone());
 					self.advance();
+
+					self.eat(TokenKind::Colon);
+
+					match self.current_token.kind {
+						TokenKind::Type(declared_type) => {
+							param_types.push(declared_type);
+							self.advance();
+						}
+						_ => panic!("No type declared") // TODO: Better error handling
+					}
 
 					while self.current_token.kind == TokenKind::Coma {
 						self.advance();
 
-						params.push(self.current_token.value.clone());
-
+						param_names.push(self.current_token.value.clone());
 						self.eat(TokenKind::Identifier);
+
+						self.eat(TokenKind::Colon);
+
+						match self.current_token.kind {
+							TokenKind::Type(declared_type) => {
+								param_types.push(declared_type);
+								self.advance();
+							}
+							_ => panic!("No type declared") // TODO: Better error handling
+						}
 					}
 				}
 
 				self.eat(TokenKind::RParenthesis);
+
+				let mut return_type = Type::Void;
+				if self.expect(TokenKind::Arrow) {
+					self.advance();
+
+					match self.current_token.kind {
+						TokenKind::Type(declared_type) => {
+							return_type = declared_type;
+							self.advance();
+						}
+						_ => panic!("No type declared") // TODO: Better error handling
+					}
+				}
+
 				self.eat(TokenKind::LBracket);
 
 				let body = self.list_instr();
@@ -285,7 +335,9 @@ impl Parser<'_> {
 
 				Node::FunctionDeclaration { 
 					name: name, 
-					params: params, 
+					param_names: param_names, 
+					param_types: param_types,
+					return_type: return_type,
 					body: Box::new(body),
 				}
 			}
@@ -343,6 +395,7 @@ mod tests {
 			Node::InstructionList {
 				current: Box::new(Node::VarDeclaration { 
 					name: String::from("condition"),
+					declared_type: None,
 					value: Box::new(
 						Node::BinaryOp { 
 							op: Operator::LogicalOr,
@@ -392,6 +445,7 @@ mod tests {
 						current: Box::new(
 							Node::VarDeclaration { 
 								name: String::from("test"),
+								declared_type: None,
 								value: Box::new(Node::Int(3))
 							}
 						), 
@@ -405,7 +459,7 @@ mod tests {
 
 	#[test]
 	fn function_declaration_parsing(){
-		let mut lexer = Lexer::new("fn foo(arg1, arg2, arg3) { return 2; let test = 2; }");
+		let mut lexer = Lexer::new("fn foo(arg1: int, arg2: int, arg3: int) -> int { return 2; let test = 2; }");
 
 		let mut parser = Parser::new(&mut lexer);
 
@@ -415,7 +469,9 @@ mod tests {
 			Node::InstructionList {
 				current: Box::new(Node::FunctionDeclaration { 
 					name: String::from("foo"), 
-					params: Vec::from([String::from("arg1"), String::from("arg2"), String::from("arg3")]), 
+					param_names: Vec::from([String::from("arg1"), String::from("arg2"), String::from("arg3")]),
+					param_types: Vec::from([Type::Int, Type::Int, Type::Int]),
+					return_type: Type::Int,
 					body: Box::new(Some(Node::InstructionList { 
 						current: Box::new(Node::ReturnStatement { 
 							value: Box::new(Some(Node::Int(2))) 
@@ -457,7 +513,7 @@ mod tests {
 
 	#[test]	
 	fn math_exp_parsing(){
-		let mut lexer = Lexer::new("let math = -1 * 3 + 4 * 2;");
+		let mut lexer = Lexer::new("let math: int = -1 * 3 + 4 * 2;");
 
 		let mut parser = Parser::new(&mut lexer);
 
@@ -467,6 +523,7 @@ mod tests {
 			Node::InstructionList {
 				current: Box::new(Node::VarDeclaration { 
 					name: String::from("math"),
+					declared_type: Some(Type::Int),
 					value: Box::new(
 						Node::BinaryOp { 
 							op: Operator::Add,
