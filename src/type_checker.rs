@@ -201,9 +201,9 @@ impl Visitor for TypeCheckerVisitor {
 
 	fn visit_if_statement(&mut self, condition: &Node, body: &Option<Node>) {
 		condition.accept(self);
-		if self.result == Type::Bool {
+		if self.result != Type::Bool {
 			// TODO: Better error display
-			panic!("Boolean type expected as condition (for)");
+			panic!("Boolean type expected as condition (if)");
 		}
 
 		if let Some(instruction_list) = body {
