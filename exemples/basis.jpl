@@ -6,6 +6,14 @@ fn add(a: int, b: int) -> int {
 	return a + b;
 }
 
+fn multiplie_exit_point(arg: bool) -> int {
+	if arg {
+		return 2;
+	}
+
+	return 1;
+}
+
 let result = add(2, 1);
 let Test = (-6 * 2) + (2 * 3) + 3;
 let test = 32.5;
@@ -21,3 +29,6 @@ if Test == 2 {
 }
 
 foo(1, Test + 3, 2);
+
+let exit_point_1 = multiplie_exit_point(false);
+let exit_point_2 = multiplie_exit_point(true);

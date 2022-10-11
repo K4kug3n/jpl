@@ -10,6 +10,7 @@ use crate::r#type::Type;
 
 pub struct InterpretorVisitor { 
 	result: ExpressionResult,
+	exit_point: bool,
 	scopes: Vec<Scope>,
 }
 
@@ -18,6 +19,7 @@ impl InterpretorVisitor {
 		// TODO: Fixme this awfull placeholder
 		InterpretorVisitor {
 			result: ExpressionResult::Float(0.0),
+			exit_point: false,
 			scopes: Vec::from([ Scope::new() ])
 		}
 	}
@@ -237,6 +239,8 @@ impl Visitor for InterpretorVisitor {
 		if let Some(exp) = value {
 			exp.accept(self);
 		}
+
+		self.exit_point = true;
 	}
 
 	fn visit_if_statement(&mut self, condition: &Node, body: &Option<Node>) {
@@ -257,6 +261,11 @@ impl Visitor for InterpretorVisitor {
 
 	fn visit_instruction_list(&mut self, current: &Node, next: &Option<Node>) {
 		current.accept(self);
+
+		if self.exit_point {
+			// We stop the current block
+			return;
+		}
 
 		if let Some(x) = next {
 			x.accept(self);
@@ -301,5 +310,8 @@ impl Visitor for InterpretorVisitor {
 			},
 			None => panic!("Function not declared")
 		}
+
+		// The function exited, no more exit_point triggered
+		self.exit_point = false;
 	}
 }
